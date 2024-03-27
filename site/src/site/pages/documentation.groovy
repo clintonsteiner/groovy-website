@@ -30,6 +30,8 @@ layout 'layouts/main.groovy', true,
                             p {
                                 yield 'The documentation is available as a '
                                 a(href: "single-page-documentation.html", 'single-page document')
+                                yield ', or a '
+                                a(href: "https://docs.groovy-lang.org/docs/latest/html/documentation/index.pdf", 'PDF')
                                 yield ', or feel free to pick at a direct section below.'
                             }
                             p "You can also browse ${$a(href: '#all-versions', 'documentation for other versions')}."
