@@ -1,0 +1,387 @@
+= Groovy and Multiversal Equality
+Paul King
+:revdate: 2024-04-24T15:00:00+00:00
+:keywords: equals, equality, scala, type checking
+:description: This post looks at how Groovy could support multiversal equality.
+
+== Introduction
+
+In Scala 3, an opt-in feature called
+https://docs.scala-lang.org/scala3/reference/contextual/multiversal-equality.html[_multiversal equality_]
+was introduced. Earlier versions of Scala supported _universal equality_,
+where any two objects can be compared for equality.
+Universal equality makes a lot of sense when you understand
+that Scala's (`==` and `!=`) equality operators, like Groovy's,
+is based on Java's `equals` method and that method takes
+any `Object` as its argument.
+
+[sidebar]
+Java folks might be more familiar with those operators
+when used with objects as being used for reference equality.
+Groovy, like Scala and Kotlin, reserves those operators for
+structural equality (since that is what we are interested in
+most of the time) and has identity operators (`===` and `!==`)
+for referential equality (pointing to the same instance).
+
+The Scala documentation has an online book which gives
+https://docs.scala-lang.org/scala3/book/ca-multiversal-equality.html[further details]
+on the benefits of having multiversal equality as an option.
+Let's look at a concrete example inspired by one of their code snippets.
+Consider the following code:
+
+[source,groovy]
+----
+var blue = getBlue() // returns Color.BLUE
+var pink = Color.PINK
+assert blue != pink
+----
+
+Now, suppose the `getBlue` method is refactored to use a different color
+library, and now returns `RGBColor.BLUE`.
+In our case, the assertion will still fail, as before, but we aren't
+really testing what we thought. In general, the behavior of our
+code might change in subtle or catastrophic ways, and we may not
+find out until runtime. Multiversal equality takes a stricter
+stance on the types which can be checked for equality and
+would pick up the issue in our above example at compilation time.
+With multiversal equality enabled, you might see an error like this:
+
+----
+[Static type checking] - Invalid equality check: com.threed.jpct.RGBColor != java.awt.Color
+ @ line 3, column 8.
+       assert blue != pink
+              ^
+----
+
+Let's look at the `Book` case study from the online Scala
+https://docs.scala-lang.org/scala3/book/ca-multiversal-equality.html[documentation].
+
+== Book Case Study
+
+The case study involves an online bookstore which sells
+physical printed books, and audiobooks. We'll start without
+considering multiversal equality, and then look at how that
+could be added later in Groovy.
+
+As a first attempt, we might define a `Book` trait containing the
+common properties:
+
+[source,groovy]
+----
+trait Book {
+    String title
+    String author
+    int year
+}
+----
+
+A domain class for printed books:
+
+[source,groovy]
+----
+@Immutable(allProperties = true)
+class PrintedBook implements Book {
+    int pages
+}
+----
+
+The `@Immutable` annotation is a meta-annotation which conceptually
+expands into the `@EqualsAndHashCode` annotation (and others).
+`@EqualsAndHashCode` is an AST transform which instructs the
+compiler to inject an `equals` method into our code.
+
+In a similar way, we'll create a domain class for audiobooks:
+
+[source,groovy]
+----
+@Immutable(allProperties = true)
+class AudioBook implements Book {
+    int lengthInMinutes
+}
+----
+
+At this stage, we can create and compare audio and printed books,
+but they will always be non-equal:
+
+[source,groovy]
+----
+var pBook = new PrintedBook(328, "1984", "George Orwell", 1949)
+var aBook = new AudioBook(682, "1984", "George Orwell", 2006)
+assert pBook != aBook
+assert aBook != pBook
+----
+
+The generated `equals` method in our code will always return false
+when comparing objects from other classes.
+It turns out that writing a correct equality method can be
+https://www.artima.com/articles/how-to-write-an-equality-method-in-java[surprisingly difficult].
+As that article alludes to, a common best practice when wanting to
+compare objects within a class hierarchy is to write a `canEqual`
+method. We also capture within our trait's `equals` method, our definition of
+what equals should mean for different subclasses. In our case,
+if the `title` and `author` are the same, they are deemed equal.
+
+[source,groovy]
+----
+trait Book {
+    String title
+    String author
+    int year
+
+    boolean canEqual(Object other) {
+        other in Book
+    }
+
+    boolean equals(Object other) {
+        if (other in Book) {
+            return other.canEqual(this)
+                && other.title == title
+                && other.author == author
+        }
+        false
+    }
+}
+----
+
+When comparing different subclasses of `Book`, we'd like to use
+the `equals` logic from the trait. When comparing two printed books
+or two audiobooks, we might want normal structural equality to apply.
+This turns out to be not too hard to do.
+
+If the `@EqualsAndHashCode` transform finds an explicit `equals`
+method, it generates instead a private `_equals` method containing
+the normal structural equality logic which you are free to use.
+Let's do that for the `PrintedBook` class:
+
+[source,groovy]
+----
+@Immutable(allProperties = true)
+class PrintedBook implements Book {
+    int pages
+
+    boolean equals(other) {
+        switch (other) {
+            case PrintedBook -> this._equals(other)
+            case AudioBook -> Book.super.equals(other)
+            default -> false
+        }
+    }
+}
+----
+
+With these changes in place, we can change our first assertion
+from above to now show equality of the audiobook to the printed book:
+
+[source,groovy]
+----
+assert pBook == aBook
+assert aBook != pBook
+----
+
+The second assertion remains unchanged since we haven't at this
+stage changed the `equals` method in `AudioBook`. Modifying `AudioBook`
+in this way, and making the relationship
+symmetrical would be the next logical step, but we'll leave the example
+as is for now to match the Scala example.
+
+Groovy doesn't yet currently support multiversal equality as a standard feature,
+but let's look at how we could add it. We'll first consider an ad-hoc approach.
+
+Groovy supports type checking extensions. It has a DSL for writing snippets
+that augment static type checking. Checks on binary operators are not common
+and don't currently have a very compact DSL syntax, but it isn't hard to
+do by making use of the `afterVisitMethod` hook and using a special `CheckingVisitor`
+helper class. In this case, we'll  write our extension in a file called
+`strictEqualsButRelaxedForPrintedBook.groovy`. It looks like this:
+
+.strictEqualsButRelaxedForPrintedBook.groovy
+[source,groovy]
+----
+afterVisitMethod { method ->
+    method.code.visit(new CheckingVisitor() {
+        @Override
+        void visitBinaryExpression(BinaryExpression be) {
+            if (be.operation.type !in [Types.COMPARE_EQUAL, Types.COMPARE_NOT_EQUAL]) {
+                return
+            }
+            lhsType = getType(be.leftExpression)
+            rhsType = getType(be.rightExpression)
+            if (lhsType != rhsType &&
+                lhsType != classNodeFor(PrintedBook) &&
+                rhsType != classNodeFor(AudioBook)) {
+                addStaticTypeError("Invalid equality check: $lhsType.name != $rhsType.name", be)
+                handled = true
+            }
+        }
+    })
+}
+----
+
+Don't worry if you don't understand this code at first glance.
+Users familiar with writing their own AST transforms will recognise parts of it.
+To fully understand it, you need to understand the type checking extension DSL.
+The good news is that, you don't need to understand how it works, just what it does.
+
+This code turns on strict equality. If the types on the left and right hand sides
+of the `==` or `!=` operators are different, compilation will fail.
+The only exception is when a `PrintedBook` is compared to an `AudioBook`,
+since we hard-coded that in our ad-hoc extension.
+
+Using it is fairly simple. Simply declare the extension on any method or class:
+
+[source,groovy]
+----
+@TypeChecked(extensions = 'strictEqualsButRelaxedForPrintedBook.groovy')
+def method() {
+    var pBook = new PrintedBook(328, "1984", "George Orwell", 1949)
+    var aBook = new AudioBook(682, "1984", "George Orwell", 2006)
+    assert pBook == aBook
+}
+----
+
+This compiles and executes successfully.
+Attempting to use other types gives compilation errors:
+
+[source,groovy]
+----
+assert aBook != pBook // [Static type checking] - Invalid equality check: AudioBook != PrintedBook
+assert 3 != 'foo' // [Static type checking] - Invalid equality check: int != java.lang.String
+assert 3 == 3f // [Static type checking] - Invalid equality check: int != float
+----
+
+As coded in our extension, even math primitives comparisons are strict.
+The Scala compiler has numerous predefined `CanEqual` instances to allow comparison between
+various types including between primitives, and between primitives and their wrapper classes.
+
+If we compare this solution so far with the Scala example,
+the Scala example uses a more general approach.
+Let's make our example slightly more general, although still not production ready.
+
+First we'll create a marker interface:
+
+[source,groovy]
+----
+interface CanEqual { }
+----
+
+A production version of this feature would probably also add generics information
+to this definition, but we'll discuss that later.
+
+Let's change our trait into an abstract class and even though our `year` property
+is common, let's move it down into the audio and printed book classes.
+Now we can use the standard generated `equals` method. By default, the method
+also knows about the `canEqual` pattern and also generates that method and makes
+use of it in the generated `equals` logic.
+
+[source,groovy]
+----
+@EqualsAndHashCode
+@TupleConstructor
+abstract class Book {
+    final String title
+    final String author
+}
+----
+
+Now let's create our `PrintedBook` class extending from our abstract class and
+implementing our marker interface:
+
+[source,groovy]
+----
+@EqualsAndHashCode(callSuper = true, useCanEqual = false)
+@TupleConstructor(callSuper = true, includeSuperProperties = true)
+class PrintedBook extends Book implements CanEqual {
+    final int pages
+    final int year
+
+    boolean equals(other) {
+        other in PrintedBook ? _equals(other) : super.equals(other)
+    }
+}
+----
+
+We do the same for `AudioBook`:
+
+[source,groovy]
+----
+@EqualsAndHashCode(callSuper = true, useCanEqual = false)
+@TupleConstructor(callSuper = true, includeSuperProperties = true)
+class AudioBook extends Book implements CanEqual {
+    final int lengthInMinutes
+    final int year
+
+    boolean equals(other) {
+        other in AudioBook ? _equals(other) : super.equals(other)
+    }
+}
+----
+
+Now we alter our type checking extension to be aware of the `CanEqual` marker
+interface. Strict equality is turned on in all cases except where both
+types implement our marker interface:
+
+.canEquals.groovy
+[source,groovy]
+----
+afterVisitMethod { method ->
+    method.code.visit(new CheckingVisitor() {
+        @Override
+        void visitBinaryExpression(BinaryExpression be) {
+            if (be.operation.type !in [Types.COMPARE_EQUAL, Types.COMPARE_NOT_EQUAL]) {
+                return
+            }
+            var lhsType = getType(be.leftExpression)
+            var rhsType = getType(be.rightExpression)
+            if ([lhsType, rhsType].every { type ->
+                implementsInterfaceOrIsSubclassOf(type, classNodeFor(CanEqual))
+            }) {
+                return
+            }
+            if (lhsType != rhsType) {
+                addStaticTypeError("Invalid equality check: $lhsType.name != $rhsType.name", be)
+                handled = true
+            }
+        }
+    })
+}
+----
+
+We use it in a similar way as before, but now comparisons are symmetric:
+
+[source,groovy]
+----
+@TypeChecked(extensions = 'canEquals.groovy')
+def method() {
+    var pBook = new PrintedBook("1984", "George Orwell", 328, 1949)
+    var aBook = new AudioBook("1984", "George Orwell", 682, 2006)
+    assert pBook == aBook
+    assert aBook == pBook
+    var reprint = new PrintedBook("1984", "George Orwell", 328, 1961)
+    assert pBook != reprint
+    assert aBook == reprint
+}
+----
+
+Now, compilation will fail when comparing any types which don't implement
+the marker interface. This works nicely but still isn't perfect.
+If we had two hierarchies and our classes in both hierarchies implemented
+our marker interface, comparing objects across the two hierarchies
+would compile but always return false.
+
+The obvious way around this would be to add generics. We could for instance
+add generics to `CanEqual` and then `PrintedBook` might implement `CanEqual<Book>`
+or we could follow Scala's lead and supply
+https://docs.scala-lang.org/scala3/reference/contextual/multiversal-equality.html#why-two-type-parameters-1[two generic parameters].
+
+== Further information
+
+* https://docs.scala-lang.org/scala3/reference/contextual/multiversal-equality.html
+* https://docs.scala-lang.org/scala3/book/ca-multiversal-equality.html
+* https://www.artima.com/articles/how-to-write-an-equality-method-in-java
+* https://github.com/paulk-asert/groovy-multiversal-equality (source code)
+
+== Conclusion
+
+At this stage, Groovy isn't planning to have multiversal equality as a standard feature
+but if you think you would find it useful, do
+https://groovy-lang.org/mailing-lists.html[let us know]!
