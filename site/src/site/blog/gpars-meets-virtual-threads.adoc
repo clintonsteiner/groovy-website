@@ -56,7 +56,7 @@ assert nums.parallelStream().map(n -> n ** 2).toList() == [1, 4, 9]
 
 Now, let's bring virtual threads into the picture. Luckily,
 GPars parallel collection facilities provide a hook for using
-an _existing_ custom executor service. This makes using virtual
+an _existing_ custom executor service (`GParsExecutorsPool.withExistingPool`). This makes using virtual
 threads for such code easy. First we create our pool (backed by virtual threads):
 
 [source,groovy]
