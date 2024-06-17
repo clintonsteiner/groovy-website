@@ -223,6 +223,10 @@ See also:
 * https://eu.communityovercode.org/program/[The official program] includes all tracks and will include
 links to the slides of the talks if/when available.
 
+Other trip reports:
+
+* https://www.linkedin.com/pulse/fourth-community-over-code-performance-engineering-track-paul-brebner-i1vlc/[Performance Engineering Track]
+
 Upcoming Community Over Code conferences:
 
 * Hangzhou China, 26-28 July 2024, https://asia.communityovercode.org/[C Over C Asia 2024]
