@@ -1,0 +1,227 @@
+= Community Over Code (Europe) 2024
+Paul King
+:revdate: 2024-06-17T17:00:00+00:00
+:draft: true
+:description: This post looks at the ASF Community Over Code EU conference in Bratislava, Slovakia, June 3-5 2024, with a particular focus on the Groovy Track.
+:keywords: groovy, asf, apachecon, communityovercode
+
+This year's European edition of the ASF conference, https://communityovercode.org/[Community Over Code],
+featured three in-person days of sessions (June 3-5) at the Halifax Convention Centre, including a Groovy track on the last day.
+
+NOTE: The presentation slides and audio/video (where available) are still being added onto the conference site.
+If additional material becomes available, this post will be updated with links to the additional content.
+
+This post gives a short trip report on the conference mostly focussed on the Groovy track.
+
+== The Conference, Venue, and Host city
+
+The conference was hosted at the Radisson Blu Carlton in Bratislava, Slovakia. The facilities were great,
+and it was a great city to visit.
+
+image:https://eu.communityovercode.org/images/blog/images-bratislava1.jpg[width=47%]
+image:https://photos.apachecon.com/_data/i/upload/2024/06/05/20240605134031-d3953d86-xx.jpg[width=42%]
+image:https://photos.apachecon.com/_data/i/upload/2024/06/10/20240610202025-1ac29b1e-xx.jpg[width=44.4%]
+image:https://photos.apachecon.com/_data/i/upload/2024/06/05/20240605081228-926eecf0-xx.jpg[width=44.4%]
+image:img/coceu2024_tac_dinner.jpg[width=55%]
+image:https://photos.apachecon.com/_data/i/upload/2023/10/20/20231020033313-d56c0136-me.jpg[stickers,width=33%]
+
+Kudos to all involved for making the event a fruitful and rewarding one!
+
+== Highlights from the Groovy BoF and Groovy Track
+
+We had a very engaging Birds-of-a-Feather (BoF) session with various users of the
+Groovy programming language including a large contingent from the https://ofbiz.apache.org/[Apache OFBiz]
+project. We also discussed some of the reasons why Groovy is still a compelling
+language choice in 2024.
+
+=== Why use Groovy in 2024?
+
+This talk looked at some of the compelling reasons for using Groovy today.
+
+https://speakerdeck.com/paulk/groovy-today[image:img/coceu2024_why_groovy.png[first slide of slide deck]]
+https://speakerdeck.com/paulk/groovy-today[Why use Groovy in 2024?]
+
+Some highlights:
+
+* Groovy's 80+ AST transforms allow you to write concise declarative style code.
+As one example, here's an example of a deeply immutable `Book` class with
+additional generated code for comparators (sorting), custom serialization and deserialization,
+and some special JavaBean index handling code:
++
+image:img/coceu2024_transforms.png[AST transform example]
+* Groovy's 2000+ extension methods enrich the Java class libraries with additional
+functionality. As one example, primitive array extensions speed up certain operations
+where you might otherwise use streams:
++
+image:img/coceu2024_primitives.png[performance of primitive int array extension methods]
+* Groovy's operator overloading and extensible tooling greatly simplifies
+use of the libraries and APIs that Java programmers are familiar with.
+Here's an example of using Apache Commons Math:
++
+image:img/coceu2024_operator_overloading.png[matrix example]
+* Groovy has excellent scripting and domain specific language (DSL) support. As one example,
+in about 10 lines of code, you can write a statically-typed DSL for working with Roman
+numerals. Once the DSL is defined, you can use it in scripts like this:
++
+[source,groovy]
+----
+assert [LVII + LVII, V * III, V ** II, IV..(V+I), [X, V, I].sort()]
+    == [       cxiv,      xv,     xxv,    iv..vi, [i, v, x]       ]
+----
++
+Invalid roman numerals are detected at compile-time:
++
+image:img/coceu2024_static_roman_numerals.png[error,width=80%]
+
+Check out the https://speakerdeck.com/paulk/groovy-today[slide deck] for more information.
+
+=== Classifying Iris flowers with Groovy, Deep Learning, and GraalVM
+
+This talk looked at the machine language problem of classification using a classic Iris flowers dataset.
+
+https://speakerdeck.com/paulk/groovy-iris[image:img/coceu2024_iris.png[cover slide for slide deck]]
+https://speakerdeck.com/paulk/groovy-iris[Classifying Iris flowers with Groovy, Deep Learning, and GraalVM]
+
+Highlights:
+
+* Classification predicts the class of something using models trained
+on measured features given a known class:
++
+image:img/coceu2024_iris1.png[classifiation,width=80%]
+
+* The case study uses a well-known Iris dataset.
+The measured features are sepal width and length, and petal width and length:
++
+image:img/coceu2024_iris2.png[classifiation,width=80%]
+
+* First, a number of classic algorithms for doing classification were examined
+including the Naïve Bayes algorithm, here using the Weka data science library:
++
+image:img/coceu2024_iris3.png[classifiation,width=80%]
+
+* Then neural networks are explained. A potential network for the case study
+is shown here:
++
+image:img/coceu2024_iris4.png[classifiation,width=80%]
+
+* Each node acts like a neuron in the human brain:
+image:img/coceu2024_iris5.png[classifiation,width=80%]
+
+* Several libraries for deep learning were discussed including Deep Netts:
++
+image:img/coceu2024_iris6.png[classifiation,width=80%]
+
+* Compiling the script using the Groovy compiler with the `--compile-static` switch and
+then using GraalVM to build a native image gave a more than 10 times speed increase:
++
+image:img/coceu2024_iris7.png[classifiation,width=80%]
+
+Check out the https://speakerdeck.com/paulk/groovy-iris[slide deck] for more information.
+
+=== Getting Started with the Micronaut Framework
+
+https://sergiodelamo.com/[Sergio del Amo] gave a talk on
+https://speakerdeck.com/sdelamo/getting-started-with-the-micronaut-framework[Getting Started with the Micronaut Framework], in particular
+its support for using Groovy when building microservices.
+https://speakerdeck.com/sdelamo/getting-started-with-the-micronaut-framework[image:img/coceu2024_micronaut.png[slide deck first slide]]
+
+Highlights:
+
+* The speed of Micronaut applications comes from its ahead-of-time approach:
++
+image:img/coceu2024_micronaut1.png[Using Micronaut Launch]
+
+* Micronaut supports a range of runtimes:
++
+image:img/coceu2024_micronaut2.png[Using Micronaut Launch]
+
+* Micronaut supports a range of messaging technologies:
++
+image:img/coceu2024_micronaut3.png[Using Micronaut Launch]
+
+* Micronaut supports a range of persistence technologies:
++
+image:img/coceu2024_micronaut4.png[Using Micronaut Launch]
+
+* Micronaut supports a range of view technologies:
++
+image:img/coceu2024_micronaut5.png[Using Micronaut Launch]
+
+* You can create Microservices applications using Micronaut launch:
++
+image:img/coceu2024_micronaut_groovy_spock.png[Using Micronaut Launch]
+
+Check out the https://speakerdeck.com/sdelamo/getting-started-with-the-micronaut-framework[slide deck] for more information.
+
+=== Whiskey Clustering with Apache Projects:Groovy, Commons CSV, Commons Math, Ignite, Spark, Wayang, Beam, and Flink
+
+This talk looked at the machine language problem of clustering using a well-known whiskey flavor profiles dataset.
+
+https://speakerdeck.com/paulk/groovy-whiskey[image:img/coceu2024_whiskey.png[cover slide for slide deck]]
+https://speakerdeck.com/paulk/groovy-whiskey[Whiskey Clustering with Apache Projects:Groovy, Commons CSV, Commons Math, Ignite, Spark, Wayang, Beam, &amp; Flink]
+
+Highlights:
+
+* The case study looked at how to cluster 86 single malt scotch whiskies based on rankings of 12 flavor categories:
++
+image:img/Clustering0.png[Whiskey flavour profiles]
+
+* There are different algorithms that can be used to do the clustering.
+K-Means clustering was the key algorithm covered:
++
+image:img/Clustering1.png[The k-means algorithm]
+
+* The talk covers using vanilla data science libraries
+including Apache Commons Math to solve this problem, then looks at
+how you might scale up the problem using a range of Apache technologies.
+The first technology considered was Apache Ignite. First we read in the data:
++
+image:img/Clustering2.png[Whiskey flavour profiles]
+
+* Then we use Ignite's distributed clustering libraries to find the centroids:
++
+image:img/Clustering3.png[Whiskey flavour profiles]
+
+* Various options to tweak the algorithm and various
+ways to visualize the results were examined:
++
+image:img/Clustering4.png[Whiskey flavour profiles with Ignite]
+
+* The same case study was also done using Spark:
++
+image:img/coceu2024_whiskey1.png[Whiskey flavour profiles with Spark]
+
+* The same case study was also done using Wayang:
++
+image:img/coceu2024_whiskey2.png[Whiskey flavour profiles with Wayang]
+
+* The same case study was also done using Beam (Python-style version shown here):
++
+image:img/coceu2024_whiskey3.png[Whiskey flavour profiles with Beam]
+
+* The same case study was also done using Flink:
++
+image:img/coceu2024_whiskey4.png[Whiskey flavour profiles with Flink]
+
+== Posters
+
+Community over Code EU also featured a dedicated area for poster sessions.
+Corridor conversations are a key part of any ASF conference.
+The posters provided a complimentary way to trigger conversations
+as well as to learn about a range of topics if the folks who might know
+all about those topics aren't in the corridor at the same time as you.
+
+image:img/coceu2024_posters.jpg[Posters,width=51%]
+https://github.com/apache/apachecon-eu/blob/main/static/posters/CoCEU_WhyGroovyToday.pdf[image:img/coceu2024_groovy_poster.jpg[Why use Groovy in 2024? Poster,width=35%]]
+
+Check out the Groovy https://github.com/apache/apachecon-eu/blob/main/static/posters/CoCEU_WhyGroovyToday.pdf[poster]!
+
+== Other information
+
+See also:
+
+* https://photos.apachecon.com/index.php?/category/38[Additional photos] (may be added to over time).
+* https://eu.communityovercode.org/program/[The official program] includes all tracks and will include
+links to the slides of the talks if/when available.
+* Upcoming Community Over Code conferences: https://asia.communityovercode.org/[C Over C Asia 2024]
+https://communityovercode.org/[C Over C NA 2024].
