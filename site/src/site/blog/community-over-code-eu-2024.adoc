@@ -1,12 +1,11 @@
 = Community Over Code (Europe) 2024
 Paul King
 :revdate: 2024-06-17T17:00:00+00:00
-:draft: true
 :description: This post looks at the ASF Community Over Code EU conference in Bratislava, Slovakia, June 3-5 2024, with a particular focus on the Groovy Track.
 :keywords: groovy, asf, apachecon, communityovercode
 
-This year's European edition of the ASF conference, https://communityovercode.org/[Community Over Code],
-featured three in-person days of sessions (June 3-5) at the Halifax Convention Centre, including a Groovy track on the last day.
+This year's European edition of the ASF conference, https://eu.communityovercode.org[Community Over Code EU],
+featured three in-person days of sessions (June 3-5) in Bratislava, Slovakia, including a Groovy track on the last day.
 
 NOTE: The presentation slides and audio/video (where available) are still being added onto the conference site.
 If additional material becomes available, this post will be updated with links to the additional content.
@@ -223,5 +222,8 @@ See also:
 * https://photos.apachecon.com/index.php?/category/38[Additional photos] (may be added to over time).
 * https://eu.communityovercode.org/program/[The official program] includes all tracks and will include
 links to the slides of the talks if/when available.
-* Upcoming Community Over Code conferences: https://asia.communityovercode.org/[C Over C Asia 2024]
-https://communityovercode.org/[C Over C NA 2024].
+
+Upcoming Community Over Code conferences:
+
+* Hangzhou China, 26-28 July 2024, https://asia.communityovercode.org/[C Over C Asia 2024]
+* Denver Colorado, 7-10 October 2024 https://communityovercode.org/[C Over C NA 2024].
