@@ -6,8 +6,7 @@ Paul King
 :description: This post looks at using Apache Pekko Actors and GPars Actors with Groovy.
 
 image:https://pekko.apache.org/assets/images/pekko_logo.png[pekko logo,100,float="right"]
-https://pekko.apache.org/[Apache Pekko] is a project undergoing https://incubator.apache.org/[incubation] at the Apache Software Foundation.
-It is an Apache licensed fork of the Akka project (based on Akka version 2.6.x) and provides a
+https://pekko.apache.org/[Apache Pekko] is an Apache-licensed fork of the Akka project (based on Akka version 2.6.x) and provides a
 framework for building applications that are concurrent, distributed, resilient and elastic.
 Pekko provides high-level abstractions for concurrency based on actors,
 as well as additional libraries for persistence, streams, HTTP, and more.
