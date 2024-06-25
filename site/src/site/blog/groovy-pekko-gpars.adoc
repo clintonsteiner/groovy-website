@@ -1,7 +1,7 @@
 = Using Apache Pekko actors and GPars actors with Groovy
 Paul King
 :revdate: 2023-07-17T23:24:56+00:00
-:updated: 2023-07-26T15:02:00+00:00
+:updated: 2024-06-25T11:59:00+00:00
 :keywords: concurrency, groovy, actors, pekko, gpars
 :description: This post looks at using Apache Pekko Actors and GPars Actors with Groovy.
 
@@ -46,7 +46,7 @@ to tell it the maximum number of times to echo the message before stopping.
 
 == A Pekko implementation in Groovy
 
-This example uses Groovy 4.0.13 and Pekko 1.0.1.
+This example uses Groovy 4.0.21 and Pekko 1.0.3.
 It was tested with JDK 11 and 17.
 
 The Pekko documentation gives Java and Scala implementations.
@@ -59,7 +59,7 @@ Here is the code for `HelloWorld`:
 
 [source,groovy]
 ----
-class HelloWorld extends AbstractBehavior<HelloWorld.Greet> {
+class HelloWorld extends AbstractBehavior<Greet> {
 
     static record Greet(String whom, ActorRef<Greeted> replyTo) {}
     static record Greeted(String whom, ActorRef<Greet> from) {}
@@ -181,25 +181,25 @@ system.tell(new HelloWorldMain.SayHello('Pekko'))
 The log output from running the script will look similar to this:
 
 ----
-[hello-pekko.actor.default-dispatcher-3] INFO org.codehaus.groovy.vmplugin.v8.IndyInterface - Hello World!
-[hello-pekko.actor.default-dispatcher-3] INFO org.codehaus.groovy.vmplugin.v8.IndyInterface - Hello Pekko!
-[hello-pekko.actor.default-dispatcher-5] INFO org.codehaus.groovy.vmplugin.v8.IndyInterface - Greeting 1 for World
-[hello-pekko.actor.default-dispatcher-3] INFO org.codehaus.groovy.vmplugin.v8.IndyInterface - Greeting 1 for Pekko
-[hello-pekko.actor.default-dispatcher-3] INFO org.codehaus.groovy.vmplugin.v8.IndyInterface - Hello World!
-[hello-pekko.actor.default-dispatcher-3] INFO org.codehaus.groovy.vmplugin.v8.IndyInterface - Hello Pekko!
-[hello-pekko.actor.default-dispatcher-5] INFO org.codehaus.groovy.vmplugin.v8.IndyInterface - Greeting 2 for World
-[hello-pekko.actor.default-dispatcher-3] INFO org.codehaus.groovy.vmplugin.v8.IndyInterface - Hello World!
-[hello-pekko.actor.default-dispatcher-3] INFO org.codehaus.groovy.vmplugin.v8.IndyInterface - Greeting 3 for World
-[hello-pekko.actor.default-dispatcher-6] INFO org.codehaus.groovy.vmplugin.v8.IndyInterface - Greeting 2 for Pekko
-[hello-pekko.actor.default-dispatcher-6] INFO org.codehaus.groovy.vmplugin.v8.IndyInterface - Hello Pekko!
-[hello-pekko.actor.default-dispatcher-6] INFO org.codehaus.groovy.vmplugin.v8.IndyInterface - Greeting 3 for Pekko
+[hello-pekko.actor.default-dispatcher-6] INFO pekko.HelloWorld - Hello World!
+[hello-pekko.actor.default-dispatcher-6] INFO pekko.HelloWorld - Hello Pekko!
+[hello-pekko.actor.default-dispatcher-3] INFO pekko.HelloWorldBot - Greeting 1 for Pekko
+[hello-pekko.actor.default-dispatcher-5] INFO pekko.HelloWorldBot - Greeting 1 for World
+[hello-pekko.actor.default-dispatcher-6] INFO pekko.HelloWorld - Hello Pekko!
+[hello-pekko.actor.default-dispatcher-6] INFO pekko.HelloWorld - Hello World!
+[hello-pekko.actor.default-dispatcher-5] INFO pekko.HelloWorldBot - Greeting 2 for Pekko
+[hello-pekko.actor.default-dispatcher-3] INFO pekko.HelloWorldBot - Greeting 2 for World
+[hello-pekko.actor.default-dispatcher-5] INFO pekko.HelloWorld - Hello Pekko!
+[hello-pekko.actor.default-dispatcher-5] INFO pekko.HelloWorld - Hello World!
+[hello-pekko.actor.default-dispatcher-3] INFO pekko.HelloWorldBot - Greeting 3 for Pekko
+[hello-pekko.actor.default-dispatcher-5] INFO pekko.HelloWorldBot - Greeting 3 for World
 [hello-pekko.actor.default-dispatcher-6] INFO org.apache.pekko.actor.CoordinatedShutdown - Running CoordinatedShutdown with reason [ActorSystemTerminateReason]
 ----
 
 == A GPars implementation in Groovy
 
-This example uses Groovy 4.0.13 and GPars 1.2.1.
-It was tested with JDK 8, 11 and 17.
+This example uses Groovy 4.0.21 and GPars 1.2.1.
+It was tested with JDK 8, 11, 17 and 21.
 
 We'll follow the same conventions for strongly typed messages in our GPars example.
 Here are our three message containers:
@@ -348,5 +348,6 @@ https://github.com/paulk-asert/groovy-pekko-gpars
 ****
 *17/Jul/2023*: Initial version. +
 *18/Jul/2023*: Add discussion about type-safe messages. +
-*26/Jul/2023*: Update to Pekko 1.0.1.
+*26/Jul/2023*: Update to Pekko 1.0.1. +
+*25/Jun/2024*: Update to Pekko 1.0.3.
 ****
