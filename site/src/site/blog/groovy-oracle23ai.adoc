@@ -90,7 +90,9 @@ Sql.withInstance(url, user, password, driver) { sql ->
     training.each { row ->
         var data = row.split(',')
         var features = data[0..-2].toString()
-        sql.executeInsert("INSERT INTO Iris (class, features) VALUES (${data[-1]},$features)")
+        sql.executeInsert """
+            INSERT INTO Iris (class, features) VALUES (${data[-1]},$features)
+        """
     }
     printf "%-20s%-20s%-20s%n", 'Actual', 'Predicted', 'Confidence'
     test.each { row ->
@@ -101,7 +103,9 @@ Sql.withInstance(url, user, password, driver) { sql ->
         order by vector_distance(features, $features)
         fetch first 10 rows only
         """
-        var results = closest10.groupBy{ e -> e.CLASS }.collectEntries { e -> [e.key, e.value.size()]}
+        var results = closest10
+                .groupBy{ e -> e.CLASS }
+                .collectEntries { e -> [e.key, e.value.size()]}
         var predicted = results.max{ e -> e.value }
         printf "%-20s%-20s%5d%n", data[-1], predicted.key, predicted.value * 10
     }
