@@ -1,0 +1,167 @@
+= Using the Oracle 23ai Vector data type with Groovy to classify Iris flowers
+Paul King
+:revdate: 2024-06-30T23:21:10+00:00
+:keywords: oracle, jdbc, groovy, classification
+:description: This post looks at using the Oracle 23ai Vector data type with Groovy.
+
+image:img/iris_flowers.png[iris flowers,200,float="right"]
+A classic data science https://en.wikipedia.org/wiki/Iris_flower_data_set[dataset] captures flower characteristics of Iris flowers.
+It captures the _width_ and _length_ of the _sepals_ and _petals_ for three _species_ (https://en.wikipedia.org/wiki/Iris_setosa[Setosa], https://en.wikipedia.org/wiki/Iris_versicolor[Versicolor], and https://en.wikipedia.org/wiki/Iris_virginica[Virginica]).
+
+The https://github.com/paulk-asert/groovy-data-science/tree/master/subprojects/Iris[Iris project] in the https://github.com/paulk-asert/groovy-data-science[groovy-data-science repo] is dedicated to this example.
+It includes a number of Groovy scripts and a Jupyter/BeakerX notebook highlighting this example
+comparing and contrasting various libraries and various classification algorithms.
+
+A previous https://groovy.apache.org/blog/classifying-iris-flowers-with-deep[blog post]
+describes this example  using several deep learning libraries and gave a solution utilizing GraalVM.
+In this blog post, we'll look at using Oracle 23ai's Vector data type and Vector AI
+queries to classify part of our dataset.
+
+In general, many machine learning/AI algorithms process vectors of information.
+Such information might be actual data values, like our flowers, or projections
+of data values, or representations of important information of text,
+video, images or sound files. The latter is often called embeddings.
+For us, we'll find flowers with similar characteristics. In other similarity
+search scenarios, we might find similar images based on the "closeness"
+of their embeddings.
+
+== The dataset
+
+The previously mentioned https://github.com/paulk-asert/groovy-data-science/tree/master/subprojects/Iris[Iris Project]
+shows how to classify the Iris dataset using various techniques. In particular, one example uses the http://haifengl.github.io/[Smile] library's
+kNN classification algorithm. The example uses the whole dataset to train the model
+and then runs the model on the whole dataset to gauge its accuracy. The algorithm
+has some trouble with the data points near the overlap of the Virginica and Versicolor
+groupings as shown in the resulting graph:
+
+image:img/iris_knn_smile.png[Graph of predicted vs actual Iris flower classifications]
+
+The purple and green points show the incorrectly classified flowers.
+
+The corresponding confusion matrix also shows these results:
+
+[subs="quotes"]
+----
+Confusion matrix:
+ROW=truth and COL=predicted
+class  0 |      50 |       0 |       0 |
+class  1 |       0 |      47 |       *3* |
+class  2 |       0 |       *3* |      47 |
+----
+
+In general, running a model on the original dataset might not be ideal
+in the sense we won't get accurate error calculations, but it does
+highlight some important information about our data. In our case
+we can see that two of the groupings become congested, and data points
+near where the two groups overlap might be expected to be prone
+to mis-classification.
+
+== The database solution
+
+First, we load our dataset from a CSV file:
+
+[source,groovy]
+----
+var file = getClass().classLoader.getResource('iris_data.csv').file as File
+var rows = file.readLines()[1..-1].shuffled() // skip header and shuffle
+var (training, test) = rows.chop(rows.size() * .8 as int, -1)
+----
+
+After shuffling the rows, we split the data into two sets.
+The first 80% will go into the database.
+It corresponds to "training" data in normal data science terminology.
+The last 20% will correspond to our "test" data.
+
+Next, we define the required information for our SQL connection:
+
+[source,groovy]
+----
+var url = 'jdbc:oracle:thin:@localhost:1521/FREEPDB1'
+var user = 'some_user'
+var password = 'some_password'
+var driver = 'oracle.jdbc.driver.OracleDriver'
+----
+
+Next, we create our database connection and use it to insert the "training" rows,
+before testing against the "test" rows:
+[source,groovy]
+----
+Sql.withInstance(url, user, password, driver) { sql ->
+    training.each { row ->
+        var data = row.split(',')
+        var features = data[0..-2].toString()
+        sql.executeInsert("INSERT INTO Iris (class, features) VALUES (${data[-1]},$features)")
+    }
+    printf "%-20s%-20s%-20s%n", 'Actual', 'Predicted', 'Confidence'
+    test.each { row ->
+        var data = row.split(',')
+        var features = VECTOR.ofFloat64Values(data[0..-2]*.toDouble() as double[])
+        var closest10 = sql.rows """
+        select class from Iris
+        order by vector_distance(features, $features)
+        fetch first 10 rows only
+        """
+        var results = closest10.groupBy{ e -> e.CLASS }.collectEntries { e -> [e.key, e.value.size()]}
+        var predicted = results.max{ e -> e.value }
+        printf "%-20s%-20s%5d%n", data[-1], predicted.key, predicted.value * 10
+    }
+}
+----
+
+There are some interesting aspects to this code.
+
+* When we inserted the data, we just used strings. Because the type of the
+`features` column is known, it converts it automatically.
+* We can alternatively, explicitly handle types, as shown for the query where
+`VECTOR.ofFloat64Values` is used.
+* What might seem strange is that no model is actually trained like
+a traditional algorithm might do. Instead, the `vector_distance` function
+in the SQL query invokes a kNN based search to find results. In our
+case we asked for the top 10 closest points.
+* Once we had the top 10 closest points, the class prediction is simply
+the most predicated class from the 10 results. Our confidence indicates
+how many of the top 10 agreed with the prediction.
+
+The output looks like this:
+
+[subs="quotes"]
+----
+Actual              Predicted           Confidence
+Iris-virginica      Iris-virginica         90
+Iris-virginica      Iris-virginica         90
+Iris-virginica      Iris-virginica        100
+Iris-virginica      Iris-virginica        100
+*Iris-virginica      Iris-versicolor        60*
+Iris-setosa         Iris-setosa           100
+Iris-setosa         Iris-setosa           100
+Iris-setosa         Iris-setosa           100
+Iris-setosa         Iris-setosa           100
+Iris-setosa         Iris-setosa           100
+Iris-virginica      Iris-virginica        100
+Iris-versicolor     Iris-versicolor       100
+Iris-versicolor     Iris-versicolor       100
+Iris-versicolor     Iris-versicolor        70
+Iris-virginica      Iris-virginica        100
+Iris-virginica      Iris-virginica        100
+Iris-setosa         Iris-setosa           100
+Iris-versicolor     Iris-versicolor       100
+Iris-virginica      Iris-virginica        100
+Iris-versicolor     Iris-versicolor       100
+Iris-setosa         Iris-setosa           100
+Iris-setosa         Iris-setosa           100
+Iris-versicolor     Iris-versicolor       100
+Iris-virginica      Iris-virginica         90
+Iris-setosa         Iris-setosa           100
+Iris-virginica      Iris-virginica         90
+Iris-setosa         Iris-setosa           100
+Iris-setosa         Iris-setosa           100
+Iris-virginica      Iris-virginica        100
+Iris-virginica      Iris-virginica        100
+----
+
+Only one result was incorrect. Since we randomly shuffled the data,
+we might get a different number of incorrect results for other runs.
+
+== Conclusion
+
+We have had a quick glimpse at using the Vector data type from Oracle 23ai with Apache Groovy.
