@@ -1,0 +1,39 @@
+= Handling Byte-Order-Mark Characters in Groovy
+Paul King
+:revdate: 2024-07-11T20:00:00+00:00
+:keywords: groovy, bom_chars, unicode, encoding
+:description: Handling Byte Order Mark (BOM) characters in Groovy
+
+A https://www.javacodegeeks.com/remove-byte-order-mark-characters-from-file.html[recent article]
+showed how to process https://en.wikipedia.org/wiki/Byte_order_mark[Byte Order Mark (BOM)] characters
+within text files when coding in Java. In particular, often manual removal of those characters might
+be needed when processing text files. The article showed how to remove the BOM characters when using
+the `InputStream` and `Reader` classes as well as how to do it using `NIO` functionality. It also showed
+how the `BOMInputStream` class in https://commons.apache.org/proper/commons-io/[Apache Commons IO]
+could be used. It automatically skips over the BOM characters.
+
+Those examples can be run as is in Groovy (albeit after fixing a bug in the first example)
+but the (complete!) idiomatic solution in Groovy is:
+
+[source,groovy]
+----
+println new File('file.txt').text
+----
+
+That's right, Groovy automatically detects
+the encoding, and removes BOM characters,
+when using the `getText()` method
+along with others like `eachLine`, `splitEachLine`,
+`readLines`, `withReader`, and `filterLine`.
+The same functionality can be obtained using
+the `newReader` method too on files and URLs.
+
+When needed there are variants that let you
+specify the encoding should you wish to explicitly
+declare it. In that case, you'd need to handle the
+BOM characters manually.
+
+Groovy's methods like `getText` call an underlying
+`CharsetToolkit` class. You can also use that class directly
+should you wish to learn more about the encoding
+of a file.
