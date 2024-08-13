@@ -304,7 +304,7 @@ class SiteGenerator {
                 def parsedDate = ZonedDateTime.parse(dateStr)
                 DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(parsedDate)
             } catch (DateTimeParseException e) {
-                println("Invalid date format: ${dateStr}. Using fallback.")
+                println "Invalid date format: $dateStr. Using fallback."
                 return "1970-01-01T00:00:00Z" // Return the fallback date
             }
         }
