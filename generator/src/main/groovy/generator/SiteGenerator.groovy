@@ -36,6 +36,9 @@ import org.asciidoctor.ast.Document
 import java.nio.file.FileSystems
 import java.nio.file.Path
 import java.nio.file.WatchEvent
+import java.time.ZonedDateTime
+import java.time.format.DateTimeFormatter
+import java.time.format.DateTimeParseException
 
 import static generator.DocumentationHTMLCleaner.parsePage
 import static java.nio.file.StandardWatchEventKinds.*
@@ -143,7 +146,10 @@ class SiteGenerator {
         }
 
         if (siteMap.blog) {
+            println "Rendering blog"
             renderBlog()
+        } else{
+            println "Skipping blog rendering"
         }
 
         long dur = System.currentTimeMillis() - sd
@@ -288,6 +294,21 @@ class SiteGenerator {
         def feedFile = new File(feedDir, 'feed.atom')
         def builder = new StreamingMarkupBuilder()
         builder.encoding = 'UTF-8'
+
+        // Use the most recent update date for the feed-level 'updated' element
+        def mostRecentUpdate = sorted.collect { it.value.attributes.updated ?: it.value.revisionInfo.date }.max()
+
+        def formatDateToRFC3339 = { dateStr ->
+            try {
+                // Parse the date string to a ZonedDateTime and then format it to RFC 3339
+                def parsedDate = ZonedDateTime.parse(dateStr)
+                DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(parsedDate)
+            } catch (DateTimeParseException e) {
+                println("Invalid date format: ${dateStr}. Using fallback.")
+                return "1970-01-01T00:00:00Z" // Return the fallback date
+            }
+        }
+
         def blogs = builder.bind {
             mkp.xmlDeclaration()
             namespaces << ['':'http://www.w3.org/2005/Atom']
@@ -297,33 +318,30 @@ class SiteGenerator {
                 link(href: base)
                 link(href: "$base/feed.atom", rel: 'self')
                 id(base)
+                updated(formatDateToRFC3339(mostRecentUpdate))  // Format to RFC 3339
                 sorted.each { k, v ->
                     def publishDate = v.revisionInfo.date
                     def updateDate = v.attributes.updated ?: v.revisionInfo.date
-                    // Atom standard is a little vague on author tag.
-                    // Multiple are allowed but many atom readers just display
-                    // first or last, so we'll have one combined one.
-                    def authorName = null
-                    if (v.authors) {
-                        authorName = v.authors*.fullName.join(', ')
-                    }
+                    def authorName = v.authors ? v.authors*.fullName.join(', ') : null
                     entry {
+                        id("$base/$k")
                         if (authorName) {
                             author {
                                 name(authorName)
                             }
                         }
-                        title(v.structuredDoctitle.combined)
+                        title(v.structuredDoctitle.combined, type: "html")
                         link(href: "$base/$k")
-                        updated(updateDate)
-                        published(publishDate)
-                        summary(v.attributes.description ?: '')
+                        updated(formatDateToRFC3339(updateDate))  // Format to RFC 3339
+                        published(formatDateToRFC3339(publishDate))  // Format to RFC 3339
+                        summary(v.attributes.description ?: '', type: "html")
                     }
                 }
             }
         }
         feedFile.text = XmlUtil.serialize(blogs)
     }
+
 
     static void main(String... args) {
         def sourcesDir = args[0] as File
