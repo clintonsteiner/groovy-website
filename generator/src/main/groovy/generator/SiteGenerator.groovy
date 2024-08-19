@@ -49,11 +49,11 @@ class SiteGenerator {
     private final static Closure SEMANTIC_SORT = { String v1, String v2 ->
         List<String> items1 = decomposeVersion(v1)
         List<String> items2 = decomposeVersion(v2)
-        for (int i=0; i<Math.max(items1.size(),items2.size());i++) {
-            if (i>=items2.size()) {
+        for (int i = 0; i < Math.max(items1.size(), items2.size()); i++) {
+            if (i >= items2.size()) {
                 return 1
             }
-            if (i>=items1.size()) {
+            if (i >= items1.size()) {
                 return -1
             }
             def p1 = items1[i]
@@ -103,7 +103,7 @@ class SiteGenerator {
 
     }
 
-    void render(String page, String target = null, Map model = [:], String baseDir=null) {
+    void render(String page, String target = null, Map model = [:], String baseDir = null) {
         model.menu = siteMap.menu
         model.currentPage = target
         target = target ?: page
@@ -116,7 +116,7 @@ class SiteGenerator {
             root = outputDir
         }
 
-        new File(root,"${target}.html").write(tplEngine.createTemplateByPath("pages/${page}.groovy").make(model).toString(), 'utf-8')
+        new File(root, "${target}.html").write(tplEngine.createTemplateByPath("pages/${page}.groovy").make(model).toString(), 'utf-8')
     }
 
     void generateSite() {
@@ -148,7 +148,7 @@ class SiteGenerator {
         if (siteMap.blog) {
             println "Rendering blog"
             renderBlog()
-        } else{
+        } else {
             println "Skipping blog rendering"
         }
 
@@ -210,7 +210,7 @@ class SiteGenerator {
 
         def wikiDir = new File(sourcesDir, "wiki")
         def gepList = [:]
-        wikiDir.eachFileRecurse { f->
+        wikiDir.eachFileRecurse { f ->
             if (f.name.endsWith('.adoc')) {
                 def header = asciidoctor.readDocumentHeader(f)
                 def bn = f.name.substring(0, f.name.lastIndexOf('.adoc'))
@@ -226,7 +226,7 @@ class SiteGenerator {
                     p = p.parentFile
                 }
                 String baseDir = relativePath ? "wiki${File.separator}${relativePath.join(File.separator)}" : 'wiki'
-                render 'wiki', bn, [notes:f.getText('utf-8'), header: header], baseDir
+                render 'wiki', bn, [notes: f.getText('utf-8'), header: header], baseDir
                 if (f.name.startsWith('GEP-')) {
                     gepList[bn] = header.documentTitle.subtitle
                 }
@@ -244,7 +244,7 @@ class SiteGenerator {
         Map<String, Document> blogList = [:]
         Map<String, String> contents = [:]
         Map<String, String> baseDirs = [:]
-        blogDir.eachFileRecurse { f->
+        blogDir.eachFileRecurse { f ->
             if (f.name.endsWith('.adoc')) {
                 def bn = f.name.substring(0, f.name.lastIndexOf('.adoc'))
                 def options = Options.builder().build()
@@ -267,19 +267,19 @@ class SiteGenerator {
             String kw = v.attributes.keywords.toString()
             keywords[k] = kw?.split(',')*.trim().toSet()
             def groovyVersionInTitle = v.structuredDoctitle.combined.findAll(/(?i)(groovy \d[.]\d+[.]\d+[-\S]*)/)
-            groovyVersionInTitle?.each {keywords[k] << it }
+            groovyVersionInTitle?.each { keywords[k] << it }
             def groovyMinorVersionInTitle = v.structuredDoctitle.combined.findAll(/(?i)(groovy \d[.]\d+)/)
-            groovyMinorVersionInTitle?.each {keywords[k] << it }
+            groovyMinorVersionInTitle?.each { keywords[k] << it }
         }
-        Map<String, Map<String, Integer>> related = [:].withDefault{ [:] }
+        Map<String, Map<String, Integer>> related = [:].withDefault { [:] }
         [blogList.keySet(), blogList.keySet()].eachCombination { String one, String two ->
             if (one != two) {
                 related[one][two] = keywords[one].intersect(keywords[two]).size()
             }
         }
-        blogList.keySet().each {bn ->
+        blogList.keySet().each { bn ->
             def sorted = related[bn].findAll { it.value as int > 1 }.sort { it.value }.keySet().toList().reverse()
-            render 'blog', bn, [notes:contents[bn], doc: blogList[bn], related: sorted.collectEntries{ [it, blogList[it].structuredDoctitle.combined]}], baseDirs[bn]
+            render 'blog', bn, [notes: contents[bn], doc: blogList[bn], related: sorted.collectEntries { [it, blogList[it].structuredDoctitle.combined] }], baseDirs[bn]
         }
         render 'blogs', "index", [list: blogList], 'blog'
         renderBlogFeed blogList, 'blog'
@@ -311,7 +311,7 @@ class SiteGenerator {
 
         def blogs = builder.bind {
             mkp.xmlDeclaration()
-            namespaces << ['':'http://www.w3.org/2005/Atom']
+            namespaces << ['': 'http://www.w3.org/2005/Atom']
             feed {
                 title('Groovy Blogs')
                 subtitle('News and stories from the Groovy Ecosystem')
@@ -322,6 +322,7 @@ class SiteGenerator {
                 sorted.each { k, v ->
                     def publishDate = v.revisionInfo.date
                     def updateDate = v.attributes.updated ?: v.revisionInfo.date
+                    // Atom allows multiple author tags but not all readers support that, so merge them
                     def authorName = v.authors ? v.authors*.fullName.join(', ') : null
                     entry {
                         id("$base/$k")
@@ -395,7 +396,7 @@ class SiteGenerator {
 
     static List<String> decomposeVersion(String version) {
         String qualifier = ''
-        if (version.indexOf('-')>0) {
+        if (version.indexOf('-') > 0) {
             qualifier = version.substring(version.indexOf('-'))
             version = version - qualifier
         }
