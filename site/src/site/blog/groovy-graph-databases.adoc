@@ -44,7 +44,7 @@ at the London 2012 Olympics. Emily Seebohm set that record in Heat 4:
 [source,groovy]
 ----
 var es = g.addV('swimmer').property(name: 'Emily Seebohm', country: '🇦🇺').next()
-swim1 = g.addV('swim').property(where: 'London 2012', event: 'Heat 4', time: 58.23, result: 'First').next()
+swim1 = g.addV('swim').property(at: 'London 2012', event: 'Heat 4', time: 58.23, result: 'First').next()
 es.addEdge('swam', swim1)
 ----
 
@@ -54,8 +54,8 @@ by querying the properties of two nodes respectively:
 [source,groovy]
 ----
 var (name, country) = ['name', 'country'].collect { g.V(es).values(it)[0] }
-var (where, event, time) = ['where', 'event', 'time'].collect { g.V(swim1).values(it)[0] }
-println "$name from $country swam a time of $time in $event at the $where Olympics"
+var (at, event, time) = ['at', 'event', 'time'].collect { g.V(swim1).values(it)[0] }
+println "$name from $country swam a time of $time in $event at the $at Olympics"
 ----
 
 Which has this output:
@@ -90,8 +90,8 @@ def insertSwimmer(TraversalSource g, name, country) {
     g.addV('swimmer').property(name: name, country: country).next()
 }
 
-def insertSwim(TraversalSource g, where, event, time, result, swimmer) {
-    var swim = g.addV('swim').property(where: where, event: event, time: time, result: result).next()
+def insertSwim(TraversalSource g, at, event, time, result, swimmer) {
+    var swim = g.addV('swim').property(at: at, event: event, time: time, result: result).next()
     swimmer.addEdge('swam', swim)
     swim
 }
@@ -195,9 +195,9 @@ at all the olympic records set in 2021 and 2024:
 
 [source,groovy]
 ----
-println "Olympic records after ${g.V(swim1).values('where', 'event').toList().join(' ')}: "
+println "Olympic records after ${g.V(swim1).values('at', 'event').toList().join(' ')}: "
 println g.V(swim1).repeat(in('supercedes')).as('sw').emit()
-    .values('where').concat(' ')
+    .values('at').concat(' ')
     .concat(select('sw').values('event')).toList().join('\n')
 ----
 
@@ -211,7 +211,6 @@ println g.V(swim1).repeat(in('supercedes')).as('sw').emit
 
 Both have this output:
 
-[source,groovy]
 ----
 Olympic records after London 2012 Heat 4:
 Tokyo 2021 Heat 4
@@ -223,4 +222,159 @@ Paris 2024 Final
 Paris 2024 Relay leg1
 ----
 
+== Neo4j
+
+Our next technology to examine is
+https://neo4j.com/product/neo4j-graph-database/[neo4j]. Neo4j is a graph
+database storing nodes and edges. Nodes and edges may have a label and properties (or attributes).
+
+[source,groovy]
+----
+es = tx.createNode(label('swimmer'))
+es.setProperty('name', 'Emily Seebohm')
+es.setProperty('country', '🇦🇺')
+
+swim1 = tx.createNode(label('swim'))
+swim1.setProperty('event', 'Heat 4')
+swim1.setProperty('at', 'London 2012')
+swim1.setProperty('result', 'First')
+swim1.setProperty('time', 58.23d)
+es.createRelationshipTo(swim1, swam)
+
+var name = es.getProperty('name')
+var country = es.getProperty('country')
+var at = swim1.getProperty('at')
+var event = swim1.getProperty('event')
+var time = swim1.getProperty('time')
+println "$name from $country swam a time of $time in $event at the $at Olympics"
+----
+
+[source,groovy]
+----
+Node.metaClass {
+    propertyMissing { String name, val -> delegate.setProperty(name, val) }
+    propertyMissing { String name -> delegate.getProperty(name) }
+    methodMissing { String name, args ->
+        delegate.createRelationshipTo(args[0], SwimmingRelationships."$name")
+    }
+}
+----
+
+[source,groovy]
+----
+km = tx.createNode(label('swimmer'))
+km.name = 'Kylie Masse'
+km.country = '🇨🇦'
+
+swim2 = tx.createNode(label('swim'))
+swim2.time = 58.17d
+swim2.result = 'First'
+swim2.event = 'Heat 4'
+swim2.at = 'Tokyo 2021'
+km.swam(swim2)
+swim2.supercedes(swim1)
+
+swim3 = tx.createNode(label('swim'))
+swim3.time = 57.72d
+swim3.result = '🥈'
+swim3.event = 'Final'
+swim3.at = 'Tokyo 2021'
+km.swam(swim3)
+----
+
+[source,groovy]
+----
+static insertSwimmer(Transaction tx, name, country) {
+    var sr = tx.createNode(label('swimmer'))
+    sr.setProperty('name', name)
+    sr.setProperty('country', country)
+    sr
+}
+
+static insertSwim(Transaction tx, at, event, time, result, swimmer) {
+    var sm = tx.createNode(label('swim'))
+    sm.setProperty('result', result)
+    sm.setProperty('event', event)
+    sm.setProperty('at', at)
+    sm.setProperty('time', time)
+    swimmer.createRelationshipTo(sm, swam)
+    sm
+}
+----
+
+[source,groovy]
+----
+var swimmers = [es, km, rs, kmk, kb]
+var successInParis = swimmers.findAll { swimmer ->
+    swimmer.getRelationships(swam).any { run ->
+        run.getOtherNode(swimmer).at == 'Paris 2024'
+    }
+}
+assert successInParis*.country.unique() == ['🇺🇸', '🇦🇺']
+
+var swims = [swim1, swim2, swim3, swim4, swim5, swim6, swim7, swim8, swim9, swim10, swim11, swim12]
+var recordSetInHeat = swims.findAll { swim ->
+    swim.event.startsWith('Heat')
+}*.at
+assert recordSetInHeat.unique() == ['London 2012', 'Tokyo 2021']
+
+var recordTimesInFinals = swims.findAll { swim ->
+    swim.event == 'Final' && swim.hasRelationship(supercedes)
+}*.time
+assert recordTimesInFinals == [57.47d, 57.33d]
+
+var info = { s -> "$s.at $s.event" }
+println "Olympic records following ${info(swim1)}:"
+
+for (Path p in tx.traversalDescription()
+    .breadthFirst()
+    .relationships(supercedes)
+    .evaluator(Evaluators.fromDepth(1))
+    .uniqueness(Uniqueness.NONE)
+    .traverse(swim1)) {
+    println p.endNode().with(info)
+}
+----
+
+[source,groovy]
+----
+assert tx.execute('''
+MATCH (s:swim WHERE s.event STARTS WITH 'Heat')
+WITH s.at as at
+WITH DISTINCT at
+RETURN at
+''')*.at == ['London 2012', 'Tokyo 2021']
+
+assert tx.execute('''
+MATCH (s1:swim {event: 'Final'})-[:supercedes]->(s2:swim)
+RETURN s1.time AS time
+''')*.time == [57.47d, 57.33d]
+
+tx.execute('''
+MATCH (s1:swim)-[:supercedes]->{1,}(s2:swim { at: $at })
+RETURN s1
+''', [at: swim1.at])*.s1.each { s ->
+    println "$s.at $s.event"
+}
+
+assert tx.execute('''
+MATCH (sr1:swimmer)-[:swam]->(sm1:swim {event: 'Final'}), (sm2:swim {event: 'Final'})-[:supercedes]->(sm3:swim)
+WHERE sm1.at = sm2.at AND sm1 <> sm2 AND sm1.time < sm3.time
+RETURN sr1.name as name
+''')*.name == ['Kylie Masse']
+----
+
+[source,groovy]
+----
+swim6.runnerup(swim3)
+swim3.runnerup(swim10)
+swim12.runnerup(swim7)
+swim7.runnerup(swim11)
+
+assert tx.execute('''
+MATCH (sr1:swimmer)-[:swam]->(sm1:swim {event: 'Final'})-[:runnerup]->{1,2}(sm2:swim {event: 'Final'})-[:supercedes]->(sm3:swim)
+WHERE sm1.time < sm3.time
+RETURN sr1.name as name
+''')*.name == ['Kylie Masse']
+----
 
