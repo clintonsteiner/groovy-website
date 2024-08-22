@@ -133,6 +133,10 @@ where olympic records were broken. We could easily have added
 more swimmers, other strokes and distances, and even other sports
 if we wanted to.
 
+Let's have a look at what our graph now looks like:
+
+image:https://raw.githubusercontent.com/paulk-asert/groovy-graphdb/main/docs/images/BackstrokeRecords.png[network of swim and swimmer vertices and relationship edges]
+
 We now might want to query the graph in numerous ways.
 For instance, what countries had success at the Paris 2024 olympics,
 where success is defined for the purposes of this query as
