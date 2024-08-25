@@ -18,7 +18,7 @@ information using several graph database technologies.
 
 Our first technology to examine is https://tinkerpop.apache.org/[Apache TinkerPop™].
 
-image:https://tinkerpop.apache.org/img/tinkerpop-splash.png[tinkerpop logo]
+image:https://tinkerpop.apache.org/img/tinkerpop-splash.png[tinkerpop logo,70%]
 
 TinkerPop is an open source computing framework for graph databases. It provides
 a common abstraction layer, and a graph query language, called Gremlin.
@@ -228,6 +228,8 @@ Our next technology to examine is
 https://neo4j.com/product/neo4j-graph-database/[neo4j]. Neo4j is a graph
 database storing nodes and edges. Nodes and edges may have a label and properties (or attributes).
 
+image:https://dist.neo4j.com/wp-content/uploads/20230926084108/Logo_FullColor_RGB_TransBG.svg[neo4j logo,50%]
+
 [source,groovy]
 ----
 es = tx.createNode(label('swimmer'))
@@ -378,7 +380,30 @@ RETURN sr1.name as name
 ''')*.name == ['Kylie Masse']
 ----
 
-== Apache Age
+== Apache AGE
+
+The next technology is the https://age.apache.org/[Apache AGE™] graph database.
+Apache AGE leverages https://www.postgresql.org[PostgreSQL] for storage.
+
+image:https://age.apache.org/age-manual/master/_static/logo.png[Apache AGE logo, 50%]
+image:https://age.apache.org/img/logo-large-postgresql.jpg[PostgreSQL logo]
+
+We installed Apache AGE via a Docker Image as outlined in the Apache AGE
+https://age.apache.org/age-manual/master/intro/setup.html#installing-via-docker-image[manual].
+
+Since Apache AGE offers a SQL-inspired graph database experience, we use Groovy's
+SQL facilities to interact with the database:
+
+[source,groovy]
+----
+Sql.withInstance(DB_URL, USER, PASS, 'org.postgresql.jdbc.PgConnection') { sql ->
+    // enable Apache AGE extension, then use Sql connection ...
+}
+----
+
+For creating our nodes and subsequent querying, we use SQL statements
+with embedded _cypher_ clauses. Here is the statement for creating
+out nodes and edges:
 
 [source,groovy]
 ----
@@ -428,6 +453,9 @@ sql.execute'''
 '''
 ----
 
+To find which olympics where records were set in heats, we
+can use the following _cypher_ query:
+
 [source,groovy]
 ----
 assert sql.rows('''
@@ -439,6 +467,13 @@ assert sql.rows('''
 ''').a*.map*.get('properties')*.at.toUnique() == ['London 2012', 'Tokyo 2021']
 ----
 
+The results come back in a special JSON-like data type called `agtype`.
+From that, we can query the properties and return the `at` property.
+We select the unique ones to remove duplicates.
+
+Similarly, we can find the times of olympic records set in finals
+as follows:
+
 [source,groovy]
 ----
 assert sql.rows('''
@@ -448,6 +483,9 @@ assert sql.rows('''
     $$) AS (a agtype)
 ''').a*.map*.get('properties')*.time == [57.47, 57.33]
 ----
+
+To print all the olympic records set across Tokyo 2021 and Paris 2024,
+we can use `eachRow` and the following query:
 
 [source,groovy]
 ----
@@ -461,6 +499,8 @@ sql.eachRow('''
 }
 ----
 
+The output looks like this:
+
 ----
 Tokyo 2021 Heat 4
 Tokyo 2021 Heat 5
@@ -471,9 +511,22 @@ Paris 2024 Final
 Paris 2024 Relay leg1
 ----
 
+The Apache AGE project also maintains a viewer tool offering a web-based
+user interface for visualization of graph data stored in our database.
+Instructions for installation are available on the
+https://github.com/apache/age-viewer[GitHub site].
+The tool allows visualization of the results from any query.
+For our database, a query returning all nodes and edges looks like this:
+
+image:img/age-viewer.png[]
+
+== OrientDB
+
 [source,groovy]
 ----
 ----
+
+== TuGraph
 
 [source,groovy]
 ----
