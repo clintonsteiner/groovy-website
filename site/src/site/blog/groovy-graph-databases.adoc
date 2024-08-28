@@ -372,7 +372,12 @@ swim6.runnerup(swim3)
 swim3.runnerup(swim10)
 swim12.runnerup(swim7)
 swim7.runnerup(swim11)
+----
 
+image:img/BackstrokeRecordsRunnerup.png[Additional runnerup relationship,60%]
+
+[source,groovy]
+----
 assert tx.execute('''
 MATCH (sr1:swimmer)-[:swam]->(sm1:swim {event: 'Final'})-[:runnerup]->{1,2}(sm2:swim {event: 'Final'})-[:supercedes]->(sm3:swim)
 WHERE sm1.time < sm3.time
@@ -521,6 +526,14 @@ For our database, a query returning all nodes and edges looks like this:
 image:img/age-viewer.png[]
 
 == OrientDB
+
+[source,groovy]
+----
+----
+
+== ArcadeDB
+
+image:img/ArcadeStudio.png[ArcadeStudio]
 
 [source,groovy]
 ----
