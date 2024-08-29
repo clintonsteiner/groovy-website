@@ -14,6 +14,9 @@ We'll use the labels `swimmer` and `swim` for these vertices. We'll have relatio
 such as `swam` and `supercedes` between vertices. We'll explore modelling and querying the event
 information using several graph database technologies.
 
+The examples in this post can be found on
+https://github.com/paulk-asert/groovy-graphdb/[GitHub].
+
 == Apache TinkerPop
 
 Our first technology to examine is https://tinkerpop.apache.org/[Apache TinkerPop™].
@@ -245,6 +248,19 @@ enum SwimmingRelationships implements RelationshipType {
 }
 ----
 
+We'll use Neo4j in embedded mode and perform all of our operations
+as part of a transaction:
+
+[source,groovy]
+----
+// ... set up managementService ...
+var graphDb = managementService.database(DEFAULT_DATABASE_NAME)
+
+try (Transaction tx = graphDb.beginTx()) {
+    // ... other Neo4j code below here ...
+}
+----
+
 Let's create our nodes and edges using Neo4j. First the existing Olympic record:
 
 [source,groovy]
@@ -404,6 +420,9 @@ RETURN s1
 
 === An aside on graph design
 
+This blog post is definitely, not meant to be an advanced course on graph database
+design, but it is worth pointing out a few points.
+
 Deciding which information should be stored as node properties and which as relationships
 still requires developer judgement. For example, we could have added a Boolean `olympicRecord`
 property to our `Swim` nodes. Certain queries might now become simpler, or at least more familiar
@@ -457,7 +476,7 @@ The query is probably faster too, but it is a tradeoff that should be weighed up
 
 == Apache AGE
 
-The next technology is the https://age.apache.org/[Apache AGE™] graph database.
+The next technology we'll look at is the https://age.apache.org/[Apache AGE™] graph database.
 Apache AGE leverages https://www.postgresql.org[PostgreSQL] for storage.
 
 image:https://age.apache.org/age-manual/master/_static/logo.png[Apache AGE logo, 50%]
@@ -484,45 +503,45 @@ out nodes and edges:
 ----
 sql.execute'''
     SELECT * FROM cypher('swimming_graph', $$ CREATE
-    (es:swimmer {name: 'Emily Seebohm', country: '🇦🇺'}),
-    (swim1:swim {event: 'Heat 4', result: 'First', time: 58.23, at: 'London 2012'}),
+    (es:Swimmer {name: 'Emily Seebohm', country: '🇦🇺'}),
+    (swim1:Swim {event: 'Heat 4', result: 'First', time: 58.23, at: 'London 2012'}),
     (es)-[:swam]->(swim1),
 
-    (km:swimmer {name: 'Kylie Masse', country: '🇨🇦'}),
-    (swim2:swim {event: 'Heat 4', result: 'First', time: 58.17, at: 'Tokyo 2021'}),
+    (km:Swimmer {name: 'Kylie Masse', country: '🇨🇦'}),
+    (swim2:Swim {event: 'Heat 4', result: 'First', time: 58.17, at: 'Tokyo 2021'}),
     (km)-[:swam]->(swim2),
-    (swim2)-[:supercedes]->(swim1),
-    (swim3:swim {event: 'Final', result: '🥈', time: 57.72, at: 'Tokyo 2021'}),
+    (swim2)-[:supersedes]->(swim1),
+    (swim3:Swim {event: 'Final', result: '🥈', time: 57.72, at: 'Tokyo 2021'}),
     (km)-[:swam]->(swim3),
 
-    (rs:swimmer {name: 'Regan Smith', country: '🇺🇸'}),
-    (swim4:swim {event: 'Heat 5', result: 'First', time: 57.96, at: 'Tokyo 2021'}),
+    (rs:Swimmer {name: 'Regan Smith', country: '🇺🇸'}),
+    (swim4:Swim {event: 'Heat 5', result: 'First', time: 57.96, at: 'Tokyo 2021'}),
     (rs)-[:swam]->(swim4),
-    (swim4)-[:supercedes]->(swim2),
-    (swim5:swim {event: 'Semifinal 1', result: 'First', time: 57.86, at: 'Tokyo 2021'}),
+    (swim4)-[:supersedes]->(swim2),
+    (swim5:Swim {event: 'Semifinal 1', result: 'First', time: 57.86, at: 'Tokyo 2021'}),
     (rs)-[:swam]->(swim5),
-    (swim6:swim {event: 'Final', result: '🥉', time: 58.05, at: 'Tokyo 2021'}),
+    (swim6:Swim {event: 'Final', result: '🥉', time: 58.05, at: 'Tokyo 2021'}),
     (rs)-[:swam]->(swim6),
-    (swim7:swim {event: 'Final', result: '🥈', time: 57.66, at: 'Paris 2024'}),
+    (swim7:Swim {event: 'Final', result: '🥈', time: 57.66, at: 'Paris 2024'}),
     (rs)-[:swam]->(swim7),
-    (swim8:swim {event: 'Relay leg1', result: 'First', time: 57.28, at: 'Paris 2024'}),
+    (swim8:Swim {event: 'Relay leg1', result: 'First', time: 57.28, at: 'Paris 2024'}),
     (rs)-[:swam]->(swim8),
 
-    (kmk:swimmer {name: 'Kaylie McKeown', country: '🇦🇺'}),
-    (swim9:swim {event: 'Heat 6', result: 'First', time: 57.88, at: 'Tokyo 2021'}),
+    (kmk:Swimmer {name: 'Kaylie McKeown', country: '🇦🇺'}),
+    (swim9:Swim {event: 'Heat 6', result: 'First', time: 57.88, at: 'Tokyo 2021'}),
     (kmk)-[:swam]->(swim9),
-    (swim9)-[:supercedes]->(swim4),
-    (swim5)-[:supercedes]->(swim9),
-    (swim10:swim {event: 'Final', result: '🥇', time: 57.47, at: 'Tokyo 2021'}),
+    (swim9)-[:supersedes]->(swim4),
+    (swim5)-[:supersedes]->(swim9),
+    (swim10:Swim {event: 'Final', result: '🥇', time: 57.47, at: 'Tokyo 2021'}),
     (kmk)-[:swam]->(swim10),
-    (swim10)-[:supercedes]->(swim5),
-    (swim11:swim {event: 'Final', result: '🥇', time: 57.33, at: 'Paris 2024'}),
+    (swim10)-[:supersedes]->(swim5),
+    (swim11:Swim {event: 'Final', result: '🥇', time: 57.33, at: 'Paris 2024'}),
     (kmk)-[:swam]->(swim11),
-    (swim11)-[:supercedes]->(swim10),
-    (swim8)-[:supercedes]->(swim11),
+    (swim11)-[:supersedes]->(swim10),
+    (swim8)-[:supersedes]->(swim11),
 
-    (kb:swimmer {name: 'Katharine Berkoff', country: '🇺🇸'}),
-    (swim12:swim {event: 'Final', result: '🥉', time: 57.98, at: 'Paris 2024'}),
+    (kb:Swimmer {name: 'Katharine Berkoff', country: '🇺🇸'}),
+    (swim12:Swim {event: 'Final', result: '🥉', time: 57.98, at: 'Paris 2024'}),
     (kb)-[:swam]->(swim12)
     $$) AS (a agtype)
 '''
@@ -553,7 +572,7 @@ as follows:
 ----
 assert sql.rows('''
     SELECT * from cypher('swimming_graph', $$
-    MATCH (s1:swim {event: 'Final'})-[:supercedes]->(s2:swim)
+    MATCH (s1:Swim {event: 'Final'})-[:supersedes]->(s2:Swim)
     RETURN s1
     $$) AS (a agtype)
 ''').a*.map*.get('properties')*.time == [57.47, 57.33]
@@ -566,7 +585,7 @@ we can use `eachRow` and the following query:
 ----
 sql.eachRow('''
     SELECT * from cypher('swimming_graph', $$
-    MATCH (s1:swim)-[:supercedes]->(swim1)
+    MATCH (s1:Swim)-[:supersedes]->(swim1)
     RETURN s1
     $$) AS (a agtype)
 ''') {
@@ -598,26 +617,466 @@ image:img/age-viewer.png[]
 
 == OrientDB
 
+image:https://www.orientdb.com/images/orientdb_logo_mid.png[orientdb logo,50%]
+
+The next graph database we'll look at is https://orientdb.org/[OrientDB].
+We used the open source Community edition. We used it in embedded mode but there are
+https://orientdb.org/docs/3.0.x/gettingstarted/Tutorial-Installation.html[instructions]
+for running a docker image as well.
+
+The main claim to fame for OrientDB (and the closely related ArcadeDB we'll cover next)
+is that they are multi-model databases, supporting graphs and documents
+in the one database.
+
+Creating our database and setting up our vertex and edge classes (think mini-schema)
+is done as follows:
+
 [source,groovy]
 ----
+try (var db = context.open("swimming", "admin", "adminpwd")) {
+    db.createVertexClass('Swimmer')
+    db.createVertexClass('Swim')
+    db.createEdgeClass('swam')
+    db.createEdgeClass('supersedes')
+    // other code here
+}
 ----
+
+See the https://github.com/paulk-asert/groovy-graphdb/tree/main/orientdb[GitHub repo] for further details.
+
+With initialization out fo the way, we can start defining our nodes and edges:
+
+[source,groovy]
+----
+var es = db.newVertex('Swimmer')
+es.setProperty('name', 'Emily Seebohm')
+es.setProperty('country', '🇦🇺')
+var swim1 = db.newVertex('Swim')
+swim1.setProperty('at', 'London 2012')
+swim1.setProperty('result', 'First')
+swim1.setProperty('event', 'Heat 4')
+swim1.setProperty('time', 58.23)
+es.addEdge(swim1, 'swam')
+----
+
+We can print out the details as before:
+
+[source,groovy]
+----
+var (name, country) = ['name', 'country'].collect { es.getProperty(it) }
+var (at, event, time) = ['at', 'event', 'time'].collect { swim1.getProperty(it) }
+println "$name from $country swam a time of $time in $event at the $at Olympics"
+----
+
+At this point, we could apply some Groovy metaprogramming to make the code more succinct,
+but we'll just flesh out our `insertSwimmer` and `insertSwim` helper methods like before.
+We can use these to enter the remaining swim information.
+
+Queries are performed using the Multi-Model API using SQL-like queries.
+Our three queries we've seen earlier look like this:
+
+[source,groovy]
+----
+var results = db.query("SELECT expand(out('supersedes').in('supersedes')) FROM Swim WHERE event = 'Final'")
+assert results*.getProperty('time').toSet() == [57.47, 57.33] as Set
+
+results = db.query("SELECT expand(out('supersedes')) FROM Swim WHERE event.left(4) = 'Heat'")
+assert results*.getProperty('at').toSet() == ['Tokyo 2021', 'London 2012'] as Set
+
+results = db.query("SELECT country FROM ( SELECT expand(in('swam')) FROM Swim WHERE at = 'Paris 2024' )")
+assert results*.getProperty('country').toSet() == ['🇺🇸', '🇦🇺'] as Set
+----
+
+Traversal looks like this:
+
+[source,groovy]
+----
+results = db.query("TRAVERSE in('supersedes') FROM :swim", swim1)
+results.each {
+    if (it.toElement() != swim1) {
+        println "${it.getProperty('at')} ${it.getProperty('event')}"
+    }
+}
+----
+
+OrientDB also supports Gremlin and a studio Web-UI.
+Both of these features are very similar to the ArcadeDB counterparts.
+We'll examine them next when we look at ArcadeDB.
 
 == ArcadeDB
 
-image:img/ArcadeStudio.png[ArcadeStudio]
+Now, we'll examine https://arcadedb.com/#getting-started[ArcadeDB].
+
+image:https://arcadedb.com/assets/images/arcadedb-logo-mini.png[arcadedb logo]
+
+ArcadeDB is a rewrite/partial fork of OrientDB and carries over its Multi-Model nature.
+We used it in embedded mode but there are
+https://arcadedb.com/#getting-started[instructions] for running a docker image if you prefer.
+
+Not surprisingly, some usage of ArcadeDB is very similar to OrientDB. Initialization
+changes slightly:
 
 [source,groovy]
 ----
+var factory = new DatabaseFactory("swimming")
+
+try (var db = factory.create()) {
+    db.transaction { ->
+        db.schema.with {
+            createVertexType('Swimmer')
+            createVertexType('Swim')
+            createEdgeType('swam')
+            createEdgeType('supersedes')
+        }
+        // ... other code goes here ...
+    }
+}
 ----
+
+Defining the existing record information is done as follows:
+
+[source,groovy]
+----
+var es = db.newVertex('Swimmer')
+es.set(name: 'Emily Seebohm', country: '🇦🇺').save()
+
+var swim1 = db.newVertex('Swim')
+swim1.set(at: 'London 2012', result: 'First', event: 'Heat 4', time: 58.23).save()
+swim1.newEdge('swam', es, false).save()
+----
+
+Accessing the information can be done like this:
+
+[source,groovy]
+----
+var (name, country) = ['name', 'country'].collect { es.get(it) }
+var (at, event, time) = ['at', 'event', 'time'].collect { swim1.get(it) }
+println "$name from $country swam a time of $time in $event at the $at Olympics"
+----
+
+ArcadeDB supports multiple query languages. The SQL-like language mirrors the OrientDB offering.
+Here are our three now familiar queries:
+
+[source,groovy]
+----
+var results = db.query('SQL', '''
+SELECT expand(outV()) FROM (SELECT expand(outE('supersedes')) FROM Swim WHERE event = 'Final')
+''')
+assert results*.toMap().time.toSet() == [57.47, 57.33] as Set
+
+results = db.query('SQL', "SELECT expand(outV()) FROM (SELECT expand(outE('supersedes')) FROM Swim WHERE event.left(4) = 'Heat')")
+assert results*.toMap().at.toSet() == ['Tokyo 2021', 'London 2012'] as Set
+
+results = db.query('SQL', "SELECT country FROM ( SELECT expand(out('swam')) FROM Swim WHERE at = 'Paris 2024' )")
+assert results*.toMap().country.toSet() == ['🇺🇸', '🇦🇺'] as Set
+----
+
+Here is our traversal example:
+
+[source,groovy]
+----
+results = db.query('SQL', "TRAVERSE out('supersedes') FROM :swim", swim1)
+results.each {
+    if (it.toElement() != swim1) {
+        var props = it.toMap()
+        println "$props.at $props.event"
+    }
+}
+----
+
+ArcadeDB also supports Cypher queries (like Neo4j). The times for records in finals query
+using the Cypher dialect looks like this:
+
+[source,groovy]
+----
+results = db.query('cypher', '''
+MATCH (s1:Swim {event: 'Final'})-[:supersedes]->(s2:Swim)
+RETURN s1.time AS time
+''')
+assert results*.toMap().time.toSet() == [57.47, 57.33] as Set
+----
+
+ArcadeDB also supports Gremlin queries. The times for records in finals query
+using the Gremlin dialect looks like this:
+
+[source,groovy]
+----
+results = db.query('gremlin', '''
+g.V().has('event', 'Final').as('ev').out('supersedes').select('ev').values('time')
+''')
+assert results*.toMap().result.toSet() == [57.47, 57.33] as Set
+----
+
+Rather than just passing a Gremlin query as a String, we can get full access to the TinkerPop environment
+as this example show:
+
+[source,groovy]
+----
+try (final ArcadeGraph graph = ArcadeGraph.open("swimming")) {
+    var recordTimesInFinals = graph.traversal().V().has('event', 'Final').as('ev').out('supersedes')
+        .select('ev').values('time').toSet()
+    assert recordTimesInFinals == [57.47, 57.33] as Set
+}
+----
+
+ArcadeDB also supports a Studio Web-UI. Here is an example of using Studio
+with a query that looks at all nodes and edges associated with the Tokyo 2021 olympics:
+
+image:img/ArcadeStudio.png[ArcadeStudio]
+
 
 == TuGraph
 
+Next, we'll look at
+https://tugraph.tech/[TuGraph].
+
+image:https://mdn.alipayobjects.com/huamei_qcdryc/afts/img/A*AbamQ5lxv0IAAAAAAAAAAAAADgOBAQ/original[tugraph logo,width=40%]
+
+We used the Community Edition using a docker image as outlined in the
+https://tugraph-db.readthedocs.io/en/latest/5.installation%26running/3.docker-deployment.html[documentation] and
+https://blog.csdn.net/qq_35721299/article/details/128076604[here].
+TuGraph's claim to fame is high performance. Certainly, that isn't really
+needed for this example, but let's have a play anyway.
+
+There are a few ways to talk to TuGraph. We'll use the recommended Neo4j
+https://tugraph-db.readthedocs.io/en/latest/7.client-tools/5.bolt-client.html[Bolt client]
+which uses the Bolt protocol to talk to the TuGraph server.
+
+We'll create a session using that client plus a helper `run` method to invoke our queries.
+
 [source,groovy]
 ----
+var authToken = AuthTokens.basic("admin", "73@TuGraph")
+var driver = GraphDatabase.driver("bolt://localhost:7687", authToken)
+var session = driver.session(SessionConfig.forDatabase("default"))
+var run = { String s -> session.run(s) }
+----
+
+Next, we set up our database including providing a schema for our nodes, edges and properties.
+One point of difference with earlier examples is that TuGraph needs a primary key for each vertex.
+Hence, we added the `id` for our `Swim` vertex.
+
+[source,groovy]
+----
+'''
+CALL db.dropDB()
+CALL db.createVertexLabel('Swimmer', 'name', 'name', STRING, false, 'country', STRING, false)
+CALL db.createVertexLabel('Swim', 'id', 'id', INT32, false, 'event', STRING, false, 'result', STRING, false, 'at', STRING, false, 'time', FLOAT, false)
+CALL db.createEdgeLabel('swam','[["Swimmer","Swim"]]')
+CALL db.createEdgeLabel('supersedes','[["Swim","Swim"]]')
+'''.trim().readLines().each{ run(it) }
+----
+
+With these defined, we can create our swim information:
+
+[source,groovy]
+----
+run '''create
+    (es:Swimmer {name: 'Emily Seebohm', country: 'AU'}),
+    (swim1:Swim {event: 'Heat 4', result: 'First', time: 58.23, at: 'London 2012', id:1}),
+    (es)-[:swam]->(swim1),
+    (km:Swimmer {name: 'Kylie Masse', country: 'CA'}),
+    (swim2:Swim {event: 'Heat 4', result: 'First', time: 58.17, at: 'Tokyo 2021', id:2}),
+    (km)-[:swam]->(swim2),
+    (swim3:Swim {event: 'Final', result: 'Silver', time: 57.72, at: 'Tokyo 2021', id:3}),
+    (km)-[:swam]->(swim3),
+    (swim2)-[:supersedes]->(swim1),
+    (rs:Swimmer {name: 'Regan Smith', country: 'US'}),
+    (swim4:Swim {event: 'Heat 5', result: 'First', time: 57.96, at: 'Tokyo 2021', id:4}),
+    (rs)-[:swam]->(swim4),
+    (swim5:Swim {event: 'Semifinal 1', result: 'First', time: 57.86, at: 'Tokyo 2021', id:5}),
+    (rs)-[:swam]->(swim5),
+    (swim6:Swim {event: 'Final', result: 'Bronze', time: 58.05, at: 'Tokyo 2021', id:6}),
+    (rs)-[:swam]->(swim6),
+    (swim7:Swim {event: 'Final', result: 'Silver', time: 57.66, at: 'Paris 2024', id:7}),
+    (rs)-[:swam]->(swim7),
+    (swim8:Swim {event: 'Relay leg1', result: 'First', time: 57.28, at: 'Paris 2024', id:8}),
+    (rs)-[:swam]->(swim8),
+    (swim4)-[:supersedes]->(swim2),
+    (kmk:Swimmer {name: 'Kaylie McKeown', country: 'AU'}),
+    (swim9:Swim {event: 'Heat 6', result: 'First', time: 57.88, at: 'Tokyo 2021', id:9}),
+    (kmk)-[:swam]->(swim9),
+    (swim9)-[:supersedes]->(swim4),
+    (swim5)-[:supersedes]->(swim9),
+    (swim10:Swim {event: 'Final', result: 'Gold', time: 57.47, at: 'Tokyo 2021', id:10}),
+    (kmk)-[:swam]->(swim10),
+    (swim10)-[:supersedes]->(swim5),
+    (swim11:Swim {event: 'Final', result: 'Gold', time: 57.33, at: 'Paris 2024', id:11}),
+    (kmk)-[:swam]->(swim11),
+    (swim11)-[:supersedes]->(swim10),
+    (swim8)-[:supersedes]->(swim11),
+    (kb:Swimmer {name: 'Katharine Berkoff', country: 'US'}),
+    (swim12:Swim {event: 'Final', result: 'Bronze', time: 57.98, at: 'Paris 2024', id:12}),
+    (kb)-[:swam]->(swim12)
+'''
+----
+
+NOTE: In my attempts to use this client, emoji content seemed to break the property parser.
+For now, I have replaced emoji content with simple text. I'll revise this post should I find
+a better workaround or if the issue is otherwise resolved.
+
+TuGraph uses Cypher style queries. Here are our three standard queries:
+
+[source,groovy]
+----
+assert run('''
+    MATCH (sr:Swimmer)-[:swam]->(sm:Swim {at: 'Paris 2024'})
+    RETURN DISTINCT sr.country AS country
+''')*.get('country')*.asString().toSet() == ["US", "AU"] as Set
+
+assert run('''
+    MATCH (s:Swim)
+    WHERE s.event STARTS WITH 'Heat'
+    RETURN DISTINCT s.at AS at
+''')*.get('at')*.asString().toSet() == ["London 2012", "Tokyo 2021"] as Set
+
+assert run('''
+    MATCH (s1:Swim {event: 'Final'})-[:supersedes]->(s2:Swim)
+    RETURN s1.time as time
+''')*.get('time')*.asDouble().toSet() == [57.47d, 57.33d] as Set
+----
+
+Here is our traversal query:
+
+[source,groovy]
+----
+run('''
+    MATCH (s1:Swim)-[:supersedes*1..10]->(s2:Swim {at: 'London 2012'})
+    RETURN s1.at as at, s1.event as event
+''')*.asMap().each{ println "$it.at $it.event" }
 ----
 
 == HugeGraph
 
+Our final technology is
+https://hugegraph.apache.org/[HugeGraph].
+HugeGraph is a project undergoing incubation at the ASF.
+
+image:https://www.apache.org/logos/res/hugegraph/hugegraph.png[hugegraph logo,50%]
+
+Apache HugeGraph's claim to fame is the ability to support very large graph databases.
+Again, not really needed for this example, but it should be fun to play with.
+We used a docker image as described in the
+https://hugegraph.apache.org/docs/quickstart/hugegraph-server/#31-use-docker-container-convenient-for-testdev[documentation].
+
+Setup involved creating a client for talking to the server (running on the docker image):
+
 [source,groovy]
 ----
+var client = HugeClient.builder("http://localhost:8080", "hugegraph").build()
+----
+
+Next, we defined the schema for our graph database:
+
+[source,groovy]
+----
+var schema = client.schema()
+schema.propertyKey("num").asInt().ifNotExist().create()
+schema.propertyKey("name").asText().ifNotExist().create()
+schema.propertyKey("country").asText().ifNotExist().create()
+schema.propertyKey("at").asText().ifNotExist().create()
+schema.propertyKey("event").asText().ifNotExist().create()
+schema.propertyKey("result").asText().ifNotExist().create()
+schema.propertyKey("time").asDouble().ifNotExist().create()
+
+schema.vertexLabel('Swimmer')
+    .properties('name', 'country')
+    .primaryKeys('name')
+    .ifNotExist()
+    .create()
+
+schema.vertexLabel('Swim')
+    .properties('num', 'at', 'event', 'result', 'time')
+    .primaryKeys('num')
+    .ifNotExist()
+    .create()
+
+schema.edgeLabel("swam")
+    .sourceLabel("Swimmer")
+    .targetLabel("Swim")
+    .ifNotExist()
+    .create()
+
+schema.edgeLabel("supersedes")
+    .sourceLabel("Swim")
+    .targetLabel("Swim")
+    .ifNotExist()
+    .create()
+
+schema.indexLabel("SwimByEvent")
+    .onV("Swim")
+    .by("event")
+    .secondary()
+    .ifNotExist()
+    .create()
+
+schema.indexLabel("SwimByAt")
+    .onV("Swim")
+    .by("at")
+    .secondary()
+    .ifNotExist()
+    .create()
+----
+
+While, technically, HugeGraph supports composite keys,
+it seemed to work better when the `Swim` vertex had a single primary key.
+We used the `num` field just giving a number to each swim.
+
+We use the graph API used for creating nodes and edges:
+
+[source,groovy]
+----
+var g = client.graph()
+
+var es = g.addVertex(T.LABEL, 'Swimmer', 'name', 'Emily Seebohm', 'country', '🇦🇺')
+var swim1 = g.addVertex(T.LABEL, 'Swim', 'at', 'London 2012', 'event', 'Heat 4', 'time', 58.23, 'result', 'First', 'num', NUM++)
+es.addEdge('swam', swim1)
+----
+
+Here is how to print out some node information:
+
+[source,groovy]
+----
+var (name, country) = ['name', 'country'].collect { es.property(it) }
+var (at, event, time) = ['at', 'event', 'time'].collect { swim1.property(it) }
+println "$name from $country swam a time of $time in $event at the $at Olympics"
+----
+
+We now create the other swimmer and swim nodes and edges.
+
+Gremlin queries are invoked through a gremlin helper object.
+Our three standard queries look like this:
+
+[source,groovy]
+----
+var gremlin = client.gremlin()
+
+var successInParis = gremlin.gremlin('''
+    g.V().out('swam').has('Swim', 'at', 'Paris 2024').in().values('country').dedup().order()
+''').execute()
+assert successInParis.data() == ['🇦🇺', '🇺🇸']
+
+var recordSetInHeat = gremlin.gremlin('''
+    g.V().hasLabel('Swim')
+        .filter { it.get().property('event').value().startsWith('Heat') }
+        .values('at').dedup().order()
+''').execute()
+assert recordSetInHeat.data() == ['London 2012', 'Tokyo 2021']
+
+var recordTimesInFinals = gremlin.gremlin('''
+    g.V().has('Swim', 'event', 'Final').as('ev').out('supersedes').select('ev').values('time').order()
+''').execute()
+assert recordTimesInFinals.data() == [57.33, 57.47]
+----
+
+Here is our traversal example:
+
+[source,groovy]
+----
+println "Olympic records after ${swim1.properties().subMap(['at', 'event']).values().join(' ')}: "
+gremlin.gremlin('''
+    g.V().has('at', 'London 2012').repeat(__.in('supersedes')).emit().values('at', 'event')
+''').execute().data().collate(2).each { a, e ->
+    println "$a $e"
+}
 ----
