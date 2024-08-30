@@ -489,7 +489,7 @@ The query is probably faster too, but it is a tradeoff that should be weighed up
 The next technology we'll look at is the https://age.apache.org/[Apache AGE™] graph database.
 Apache AGE leverages https://www.postgresql.org[PostgreSQL] for storage.
 
-image:https://age.apache.org/age-manual/master/_static/logo.png[Apache AGE logo, 50%]
+image:https://age.apache.org/age-manual/master/_static/logo.png[Apache AGE logo, 40%]
 image:https://age.apache.org/img/logo-large-postgresql.jpg[PostgreSQL logo]
 
 We installed Apache AGE via a Docker Image as outlined in the Apache AGE
