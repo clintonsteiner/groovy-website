@@ -9,6 +9,16 @@ The Olympics is over for another 4 years. For sports fans, there were many excit
 Let's look at just one event where the Olympic record was broken several times over the
 last three years. We'll look at the women's 100m backstroke and model the results as a graph database.
 
+Why the women's 100m backstroke? Well, that was a particularly exciting event
+in terms of broken records. In Heat 4 of the Tokyo 2021 Olympics, Kylie Masse broke the record previously
+held by Emily Seebohm at the London 2012 Olympics. A few minutes later in Heat 5, Regan Smith
+broke the record again. Then in another few minutes in Heat 6, Kaylee McKeown broke the record again.
+On the following day in Semifinal 1, Regan took back the record. Then, on the following
+day in the final, Kaylee reclaimed the record. At the Paris 2024 Olympics,
+Kaylee bettered her own record in the final. Then a few days later,
+Regan lead off the 4 x 100m medley relay and broke the backstroke record swimming the first leg.
+That makes 7 times the record was broken across the 2 games!
+
 We'll have vertices in our graph database corresponding to the swimmers and the swims.
 We'll use the labels `swimmer` and `swim` for these vertices. We'll have relationships
 such as `swam` and `supercedes` between vertices. We'll explore modelling and querying the event
@@ -118,7 +128,7 @@ var swim6 = insertSwim(g, 'Tokyo 2021', 'Final', 58.05, '🥉', rs)
 var swim7 = insertSwim(g, 'Paris 2024', 'Final', 57.66, '🥈', rs)
 var swim8 = insertSwim(g, 'Paris 2024', 'Relay leg1', 57.28, 'First', rs)
 
-var kmk = insertSwimmer(g, 'Kaylie McKeown', '🇦🇺')
+var kmk = insertSwimmer(g, 'Kaylee McKeown', '🇦🇺')
 var swim9 = insertSwim(g, 'Tokyo 2021', 'Heat 6', 57.88, 'First', kmk)
 swim9.addEdge('supercedes', swim4)
 swim5.addEdge('supercedes', swim9)
@@ -527,7 +537,7 @@ sql.execute'''
     (swim8:Swim {event: 'Relay leg1', result: 'First', time: 57.28, at: 'Paris 2024'}),
     (rs)-[:swam]->(swim8),
 
-    (kmk:Swimmer {name: 'Kaylie McKeown', country: '🇦🇺'}),
+    (kmk:Swimmer {name: 'Kaylee McKeown', country: '🇦🇺'}),
     (swim9:Swim {event: 'Heat 6', result: 'First', time: 57.88, at: 'Tokyo 2021'}),
     (kmk)-[:swam]->(swim9),
     (swim9)-[:supersedes]->(swim4),
@@ -893,7 +903,7 @@ run '''create
     (swim8:Swim {event: 'Relay leg1', result: 'First', time: 57.28, at: 'Paris 2024', id:8}),
     (rs)-[:swam]->(swim8),
     (swim4)-[:supersedes]->(swim2),
-    (kmk:Swimmer {name: 'Kaylie McKeown', country: 'AU'}),
+    (kmk:Swimmer {name: 'Kaylee McKeown', country: 'AU'}),
     (swim9:Swim {event: 'Heat 6', result: 'First', time: 57.88, at: 'Tokyo 2021', id:9}),
     (kmk)-[:swam]->(swim9),
     (swim9)-[:supersedes]->(swim4),
@@ -946,15 +956,15 @@ run('''
 ''')*.asMap().each{ println "$it.at $it.event" }
 ----
 
-== HugeGraph
+== Apache HugeGraph
 
-Our final technology is
+Our final technology is Apache
 https://hugegraph.apache.org/[HugeGraph].
-HugeGraph is a project undergoing incubation at the ASF.
+It is a project undergoing incubation at the ASF.
 
 image:https://www.apache.org/logos/res/hugegraph/hugegraph.png[hugegraph logo,50%]
 
-Apache HugeGraph's claim to fame is the ability to support very large graph databases.
+HugeGraph's claim to fame is the ability to support very large graph databases.
 Again, not really needed for this example, but it should be fun to play with.
 We used a docker image as described in the
 https://hugegraph.apache.org/docs/quickstart/hugegraph-server/#31-use-docker-container-convenient-for-testdev[documentation].
