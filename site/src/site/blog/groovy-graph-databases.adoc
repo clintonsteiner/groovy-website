@@ -956,6 +956,68 @@ run('''
 ''')*.asMap().each{ println "$it.at $it.event" }
 ----
 
+.An Aside on Graph Databases
+****
+
+Graph databases are known for more succinct queries
+and vastly more efficient queries in some scenarios.
+Do you prefer this cypher query:
+
+[source,sql]
+----
+MATCH (sr:Swimmer)-[:swam]->(sm:Swim {at: 'Paris 2024'})
+RETURN DISTINCT sr.country AS country
+----
+
+Or the equivalent SQL query assuming we were storing all the information in tables:
+
+[source,sql]
+----
+SELECT DISTINCT country FROM Swimmer
+LEFT JOIN Swimmer_Swim
+    ON Swimmer.swimmerId = Swimmer_Swim.fkSwimmer
+LEFT JOIN Swim
+    ON Swim.swimId = Swimmer_Swim.fkSwim
+WHERE Swim.at = 'Paris 2024'
+----
+
+Here we are assuming a many-to-many relationship between _swimmers_ and _swims_
+which is what is required to correctly model relay swims.
+
+For the traversal case, the difference is even more obvious.
+Here is the cypher:
+
+[source,sql]
+----
+MATCH (s1:Swim)-[:supersedes*1..10]->(s2:Swim {at: 'London 2012'})
+RETURN s1.at as at, s1.event as event
+----
+
+And the equivalent cypher:
+
+[source,sql]
+----
+WITH RECURSIVE traversed(swimId) AS (
+    SELECT fkNew FROM Supersedes
+    WHERE fkOld IN (
+        SELECT swimId FROM Swim
+        WHERE event = 'Heat 4' AND at = 'London 2012'
+    )
+    UNION ALL
+    SELECT Supersedes.fkNew as swimId
+    FROM traversed as t
+        JOIN Supersedes
+            ON t.swimId = Supersedes.fkOld
+    WHERE t.swimId = swimId
+)
+SELECT at, event FROM Swim
+WHERE swimId IN (SELECT * FROM traversed)
+----
+
+Here we have a `Supersedes` table and a recursive SQL function, `traversed`.
+
+****
+
 == Apache HugeGraph
 
 Our final technology is Apache
