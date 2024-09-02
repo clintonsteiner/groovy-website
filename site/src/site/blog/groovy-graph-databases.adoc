@@ -5,13 +5,23 @@ Paul King
 :draft: true
 :description: This post illustrates using graph databases with Groovy.
 
+In this blog post, we look at using graph databases with Groovy.
+We'll look at:
+
+* Some advantages of graph database technologies
+* Some features of Groovy which make using such databases a little nicer
+* Code examples for a common case study across 7 interesting graph databases
+
+== Case Study
+
 The Olympics is over for another 4 years. For sports fans, there were many exciting moments.
 Let's look at just one event where the Olympic record was broken several times over the
-last three years. We'll look at the women's 100m backstroke and model the results as a graph database.
+last three years. We'll look at the women's 100m backstroke and model the results using
+graph databases.
 
 Why the women's 100m backstroke? Well, that was a particularly exciting event
 in terms of broken records. In Heat 4 of the Tokyo 2021 Olympics, Kylie Masse broke the record previously
-held by Emily Seebohm at the London 2012 Olympics. A few minutes later in Heat 5, Regan Smith
+held by Emily Seebohm from the London 2012 Olympics. A few minutes later in Heat 5, Regan Smith
 broke the record again. Then in another few minutes in Heat 6, Kaylee McKeown broke the record again.
 On the following day in Semifinal 1, Regan took back the record. Then, on the following
 day in the final, Kaylee reclaimed the record. At the Paris 2024 Olympics,
@@ -19,13 +29,98 @@ Kaylee bettered her own record in the final. Then a few days later,
 Regan lead off the 4 x 100m medley relay and broke the backstroke record swimming the first leg.
 That makes 7 times the record was broken across the 2 games!
 
+image:img/BackstrokeRecord.png[Result of Semifinal1,70%]
+
 We'll have vertices in our graph database corresponding to the swimmers and the swims.
-We'll use the labels `swimmer` and `swim` for these vertices. We'll have relationships
-such as `swam` and `supercedes` between vertices. We'll explore modelling and querying the event
+We'll use the labels `Swimmer` and `Swim` for these vertices. We'll have relationships
+such as `swam` and `supersedes` between vertices.
+We'll explore modelling and querying the event
 information using several graph database technologies.
 
 The examples in this post can be found on
 https://github.com/paulk-asert/groovy-graphdb/[GitHub].
+
+== Why graph databases?
+
+RDBMS systems are many times more popular than graph databases.
+This blog post doesn't aim to convert everyone to use graph databases all the time,
+but we'll show you some examples of when it might make sense and let you make up your own mind.
+
+Graph databases are known for more succinct queries
+and vastly more efficient queries in some scenarios.
+Which scenarios? Usually, it boils down to relationships.
+If there are important relationships between data in your system,
+graph databases might make sense.
+
+As a first example, do you prefer this cypher query (it's from the TuGraph code we'll see later
+but other technologies are similar):
+
+[source,sql]
+----
+MATCH (sr:Swimmer)-[:swam]->(sm:Swim {at: 'Paris 2024'})
+RETURN DISTINCT sr.country AS country
+----
+
+Or the equivalent SQL query assuming we were storing
+the information in relational tables:
+
+[source,sql]
+----
+SELECT DISTINCT country FROM Swimmer
+LEFT JOIN Swimmer_Swim
+    ON Swimmer.swimmerId = Swimmer_Swim.fkSwimmer
+LEFT JOIN Swim
+    ON Swim.swimId = Swimmer_Swim.fkSwim
+WHERE Swim.at = 'Paris 2024'
+----
+
+This SQL query is typical of what is required when we have a many-to-many relationship
+between our entities, in this case _swimmers_ and _swims_. Many-to-many is required to
+correctly model relay swims like the last record swim (though for brevity, we haven't
+included the other relay swimmers in our dataset). The multiple joins in that query
+can also be notoriously slow for large datasets.
+
+We'll see other examples later too, one being a query involving traversal of relationships.
+Here is the cypher (again from TuGraph):
+
+[source,sql]
+----
+MATCH (s1:Swim)-[:supersedes*1..10]->(s2:Swim {at: 'London 2012'})
+RETURN s1.at as at, s1.event as event
+----
+
+And the equivalent SQL:
+
+[source,sql]
+----
+WITH RECURSIVE traversed(swimId) AS (
+    SELECT fkNew FROM Supersedes
+    WHERE fkOld IN (
+        SELECT swimId FROM Swim
+        WHERE event = 'Heat 4' AND at = 'London 2012'
+    )
+    UNION ALL
+    SELECT Supersedes.fkNew as swimId
+    FROM traversed as t
+        JOIN Supersedes
+            ON t.swimId = Supersedes.fkOld
+    WHERE t.swimId = swimId
+)
+SELECT at, event FROM Swim
+WHERE swimId IN (SELECT * FROM traversed)
+----
+
+Here we have a `Supersedes` table and a recursive SQL function, `traversed`.
+The details aren't important, but it shows the kind of complexity typically
+required for the kind of relationship traversal we are looking at.
+There are certainly far more complex SQL examples for different kinds of
+traversals like shortest path.
+
+Now, it's time to explore the case study using our different database technologies.
+We tried to pick technologies that seem reasonably well maintained, had reasonable
+JVM support, and had any features that seemed worth showing off. Several we
+selected because they have TinkerPop support. It's a Groovy-based technology
+and will be our first technology to explore.
 
 == Apache TinkerPop
 
@@ -36,8 +131,9 @@ image:https://tinkerpop.apache.org/img/tinkerpop-splash.png[tinkerpop logo,70%]
 TinkerPop is an open source computing framework for graph databases. It provides
 a common abstraction layer, and a graph query language, called Gremlin.
 This allows you to work with numerous graph database implementations in a consistent way.
-TinkerPop also provides its own graph engine implementation, called TinkerGraph, which is what
-we'll use initially.
+TinkerPop also provides its own graph engine implementation, called TinkerGraph,
+which is what we'll use initially. TinkerPop/Gremlin will be a technology we revisit
+for other databases later.
 
 We'll look at the swims for the medalists and record breakers at the Tokyo 2021 and Paris 2024 Olympics
 in the women's 100m backstroke. For reference purposes, we'll also include the previous swim that
@@ -308,16 +404,39 @@ Node.metaClass {
 }
 ----
 
-Now we use normal Groovy property access for setting the node properties. It looks much cleaner.
+What does this do? The propertyMissing lines catch attempts to use Groovy's
+normal property access and funnels then through the `getProperty` and `setProperty` methods.
+The methodMissing line means any attempted method calls that we don't recognize
+are intended to be relationship creation, so we funnel them through the appropriate
+method call.
+
+Now we can use normal Groovy property access for setting the node properties.
+It looks much cleaner.
 We define an edge relationship simply by calling a method having the relationship name.
 
 [source,groovy]
 ----
-km = tx.createNode(label('swimmer'))
+km = tx.createNode(label('Swimmer'))
 km.name = 'Kylie Masse'
 km.country = '🇨🇦'
+----
 
-swim2 = tx.createNode(label('swim'))
+The code is already a little cleaner, but we can tweak the metaprogramming a little
+more to get rid of the noise associated with the `label` method:
+
+[source,groovy]
+----
+Transaction.metaClass {
+    createNode { String labelName -> delegate.createNode(label(labelName)) }
+}
+----
+
+This adds an overload for `createNode` that takes a `String`, and
+node creation is improved again, as we can see here:
+
+[source,groovy]
+----
+swim2 = tx.createNode('Swim')
 swim2.time = 58.17d
 swim2.result = 'First'
 swim2.event = 'Heat 4'
@@ -325,7 +444,7 @@ swim2.at = 'Tokyo 2021'
 km.swam(swim2)
 swim2.supercedes(swim1)
 
-swim3 = tx.createNode(label('swim'))
+swim3 = tx.createNode('Swim')
 swim3.time = 57.72d
 swim3.result = '🥈'
 swim3.event = 'Final'
@@ -333,8 +452,9 @@ swim3.at = 'Tokyo 2021'
 km.swam(swim3)
 ----
 
-The code is certainly a lot cleaner, and it was quite a minimal amount of work to define the necessary
-metaprogramming. With a little bit more work, we could use static metaprogramming techniques.
+The code for relationships is certainly a lot cleaner too,
+and it was quite a minimal amount of work to define the necessary metaprogramming.
+With a little bit more work, we could use static metaprogramming techniques.
 This would give us better IDE completion.
 
 Another interesting topic which we won't elaborate here is stronger type checking for graphs.
@@ -955,68 +1075,6 @@ run('''
     RETURN s1.at as at, s1.event as event
 ''')*.asMap().each{ println "$it.at $it.event" }
 ----
-
-.An Aside on Graph Databases
-****
-
-Graph databases are known for more succinct queries
-and vastly more efficient queries in some scenarios.
-Do you prefer this cypher query:
-
-[source,sql]
-----
-MATCH (sr:Swimmer)-[:swam]->(sm:Swim {at: 'Paris 2024'})
-RETURN DISTINCT sr.country AS country
-----
-
-Or the equivalent SQL query assuming we were storing all the information in tables:
-
-[source,sql]
-----
-SELECT DISTINCT country FROM Swimmer
-LEFT JOIN Swimmer_Swim
-    ON Swimmer.swimmerId = Swimmer_Swim.fkSwimmer
-LEFT JOIN Swim
-    ON Swim.swimId = Swimmer_Swim.fkSwim
-WHERE Swim.at = 'Paris 2024'
-----
-
-Here we are assuming a many-to-many relationship between _swimmers_ and _swims_
-which is what is required to correctly model relay swims.
-
-For the traversal case, the difference is even more obvious.
-Here is the cypher:
-
-[source,sql]
-----
-MATCH (s1:Swim)-[:supersedes*1..10]->(s2:Swim {at: 'London 2012'})
-RETURN s1.at as at, s1.event as event
-----
-
-And the equivalent cypher:
-
-[source,sql]
-----
-WITH RECURSIVE traversed(swimId) AS (
-    SELECT fkNew FROM Supersedes
-    WHERE fkOld IN (
-        SELECT swimId FROM Swim
-        WHERE event = 'Heat 4' AND at = 'London 2012'
-    )
-    UNION ALL
-    SELECT Supersedes.fkNew as swimId
-    FROM traversed as t
-        JOIN Supersedes
-            ON t.swimId = Supersedes.fkOld
-    WHERE t.swimId = swimId
-)
-SELECT at, event FROM Swim
-WHERE swimId IN (SELECT * FROM traversed)
-----
-
-Here we have a `Supersedes` table and a recursive SQL function, `traversed`.
-
-****
 
 == Apache HugeGraph
 
