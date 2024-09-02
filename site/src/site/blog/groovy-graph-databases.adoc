@@ -1,8 +1,7 @@
 = Using Graph Databases with Groovy
 Paul King
-:revdate: 2024-08-20T10:18:00+00:00
+:revdate: 2024-09-02T22:18:00+00:00
 :keywords: tugraph, tinkerpop, gremlin, neo4j, apache age, graph databases, apache hugegraph, arcadedb, orientdb, groovy
-:draft: true
 :description: This post illustrates using graph databases with Groovy.
 
 In this blog post, we look at using property graph databases with Groovy.
@@ -574,7 +573,7 @@ We could write a query to find this as follows:
 [source,groovy]
 ----
 assert tx.execute('''
-MATCH (sr1:swimmer)-[:swam]->(sm1:swim {event: 'Final'}), (sm2:swim {event: 'Final'})-[:supersedes]->(sm3:swim)
+MATCH (sr1:Swimmer)-[:swam]->(sm1:Swim {event: 'Final'}), (sm2:Swim {event: 'Final'})-[:supersedes]->(sm3:Swim)
 WHERE sm1.at = sm2.at AND sm1 <> sm2 AND sm1.time < sm3.time
 RETURN sr1.name as name
 ''')*.name == ['Kylie Masse']
@@ -602,7 +601,7 @@ The resulting query becomes this:
 [source,groovy]
 ----
 assert tx.execute('''
-MATCH (sr1:swimmer)-[:swam]->(sm1:swim {event: 'Final'})-[:runnerup]->{1,2}(sm2:swim {event: 'Final'})-[:supersedes]->(sm3:swim)
+MATCH (sr1:Swimmer)-[:swam]->(sm1:Swim {event: 'Final'})-[:runnerup]->{1,2}(sm2:Swim {event: 'Final'})-[:supersedes]->(sm3:Swim)
 WHERE sm1.time < sm3.time
 RETURN sr1.name as name
 ''')*.name == ['Kylie Masse']
@@ -692,7 +691,7 @@ can use the following _cypher_ query:
 ----
 assert sql.rows('''
     SELECT * from cypher('swimming_graph', $$
-    MATCH (s:swim)
+    MATCH (s:Swim)
     WHERE left(s.event, 4) = 'Heat'
     RETURN s
     $$) AS (a agtype)
