@@ -1,14 +1,14 @@
 = Using Graph Databases with Groovy
 Paul King
 :revdate: 2024-08-20T10:18:00+00:00
-:keywords: tugraph, tinkerpop, gremlin, neo4j, apache age, graph databases, apache hugegraph, orientdb, arcadedb, orientdb, groovy
+:keywords: tugraph, tinkerpop, gremlin, neo4j, apache age, graph databases, apache hugegraph, arcadedb, orientdb, groovy
 :draft: true
 :description: This post illustrates using graph databases with Groovy.
 
-In this blog post, we look at using graph databases with Groovy.
+In this blog post, we look at using property graph databases with Groovy.
 We'll look at:
 
-* Some advantages of graph database technologies
+* Some advantages of property graph database technologies
 * Some features of Groovy which make using such databases a little nicer
 * Code examples for a common case study across 7 interesting graph databases
 
@@ -27,7 +27,7 @@ On the following day in Semifinal 1, Regan took back the record. Then, on the fo
 day in the final, Kaylee reclaimed the record. At the Paris 2024 Olympics,
 Kaylee bettered her own record in the final. Then a few days later,
 Regan lead off the 4 x 100m medley relay and broke the backstroke record swimming the first leg.
-That makes 7 times the record was broken across the 2 games!
+That makes 7 times the record was broken across the last 2 games!
 
 image:img/BackstrokeRecord.png[Result of Semifinal1,70%]
 
@@ -42,16 +42,20 @@ https://github.com/paulk-asert/groovy-graphdb/[GitHub].
 
 == Why graph databases?
 
-RDBMS systems are many times more popular than graph databases.
-This blog post doesn't aim to convert everyone to use graph databases all the time,
-but we'll show you some examples of when it might make sense and let you make up your own mind.
-
-Graph databases are known for more succinct queries
-and vastly more efficient queries in some scenarios.
+RDBMS systems are many times more popular than graph databases, but there are a
+range of scenarios where graph databases are often used.
 Which scenarios? Usually, it boils down to relationships.
 If there are important relationships between data in your system,
 graph databases might make sense.
+Typical usage scenarios include fraud detection, knowledge graphs, recommendations engines,
+social networks, and supply chain management.
 
+This blog post doesn't aim to convert everyone to use graph databases all the time,
+but we'll show you some examples of when it might make sense and let you make up your own mind.
+Graph databases certainly represent a very useful tool to have in your toolbox should the need arise.
+
+Graph databases are known for more succinct queries
+and vastly more efficient queries in some scenarios.
 As a first example, do you prefer this cypher query (it's from the TuGraph code we'll see later
 but other technologies are similar):
 
@@ -153,8 +157,8 @@ at the London 2012 Olympics. Emily Seebohm set that record in Heat 4:
 
 [source,groovy]
 ----
-var es = g.addV('swimmer').property(name: 'Emily Seebohm', country: '🇦🇺').next()
-swim1 = g.addV('swim').property(at: 'London 2012', event: 'Heat 4', time: 58.23, result: 'First').next()
+var es = g.addV('Swimmer').property(name: 'Emily Seebohm', country: '🇦🇺').next()
+swim1 = g.addV('Swim').property(at: 'London 2012', event: 'Heat 4', time: 58.23, result: 'First').next()
 es.addEdge('swam', swim1)
 ----
 
@@ -197,11 +201,11 @@ Let's create some helper methods to simplify creation of the remaining informati
 [source,groovy]
 ----
 def insertSwimmer(TraversalSource g, name, country) {
-    g.addV('swimmer').property(name: name, country: country).next()
+    g.addV('Swimmer').property(name: name, country: country).next()
 }
 
 def insertSwim(TraversalSource g, at, event, time, result, swimmer) {
-    var swim = g.addV('swim').property(at: at, event: event, time: time, result: result).next()
+    var swim = g.addV('Swim').property(at: at, event: event, time: time, result: result).next()
     swimmer.addEdge('swam', swim)
     swim
 }
@@ -213,12 +217,12 @@ Now we can create the remaining swim information:
 ----
 var km = insertSwimmer(g, 'Kylie Masse', '🇨🇦')
 var swim2 = insertSwim(g, 'Tokyo 2021', 'Heat 4', 58.17, 'First', km)
-swim2.addEdge('supercedes', swim1)
+swim2.addEdge('supersedes', swim1)
 var swim3 = insertSwim(g, 'Tokyo 2021', 'Final', 57.72, '🥈', km)
 
 var rs = insertSwimmer(g, 'Regan Smith', '🇺🇸')
 var swim4 = insertSwim(g, 'Tokyo 2021', 'Heat 5', 57.96, 'First', rs)
-swim4.addEdge('supercedes', swim2)
+swim4.addEdge('supersedes', swim2)
 var swim5 = insertSwim(g, 'Tokyo 2021', 'Semifinal 1', 57.86, '', rs)
 var swim6 = insertSwim(g, 'Tokyo 2021', 'Final', 58.05, '🥉', rs)
 var swim7 = insertSwim(g, 'Paris 2024', 'Final', 57.66, '🥈', rs)
@@ -226,13 +230,13 @@ var swim8 = insertSwim(g, 'Paris 2024', 'Relay leg1', 57.28, 'First', rs)
 
 var kmk = insertSwimmer(g, 'Kaylee McKeown', '🇦🇺')
 var swim9 = insertSwim(g, 'Tokyo 2021', 'Heat 6', 57.88, 'First', kmk)
-swim9.addEdge('supercedes', swim4)
-swim5.addEdge('supercedes', swim9)
+swim9.addEdge('supersedes', swim4)
+swim5.addEdge('supersedes', swim9)
 var swim10 = insertSwim(g, 'Tokyo 2021', 'Final', 57.47, '🥇', kmk)
-swim10.addEdge('supercedes', swim5)
+swim10.addEdge('supersedes', swim5)
 var swim11 = insertSwim(g, 'Paris 2024', 'Final', 57.33, '🥇', kmk)
-swim11.addEdge('supercedes', swim10)
-swim8.addEdge('supercedes', swim11)
+swim11.addEdge('supersedes', swim10)
+swim8.addEdge('supersedes', swim11)
 
 var kb = insertSwimmer(g, 'Katharine Berkoff', '🇺🇸')
 var swim12 = insertSwim(g, 'Paris 2024', 'Final', 57.98, '🥉', kb)
@@ -240,8 +244,8 @@ var swim12 = insertSwim(g, 'Paris 2024', 'Final', 57.98, '🥉', kb)
 
 Note that we just entered the swims where medals were won or
 where olympic records were broken. We could easily have added
-more swimmers, other strokes and distances, and even other sports
-if we wanted to.
+more swimmers, other strokes and distances, relay events,
+and even other sports if we wanted to.
 
 Let's have a look at what our graph now looks like:
 
@@ -249,7 +253,7 @@ image:https://raw.githubusercontent.com/paulk-asert/groovy-graphdb/main/docs/ima
 
 We now might want to query the graph in numerous ways.
 For instance, what countries had success at the Paris 2024 olympics,
-where success is defined for the purposes of this query as
+where success is defined, for the purposes of this query, as
 winning a medal or breaking a record. Of course, just having
 a swimmer make the olympic team is a great success - but let's
 keep our example simple for now.
@@ -272,7 +276,7 @@ Similarly, we can find the olympic records set during heat swims:
 
 [source,groovy]
 ----
-var recordSetInHeat = g.V().hasLabel('swim')
+var recordSetInHeat = g.V().hasLabel('Swim')
     .filter { it.get().property('event').value().startsWith('Heat') }
     .values('at').toSet()
 assert recordSetInHeat == ['London 2012', 'Tokyo 2021'] as Set
@@ -301,9 +305,17 @@ var recordTimesInFinals = g.V.has('event', 'Final').as('ev').out('supersedes').s
 assert recordTimesInFinals == [57.47, 57.33] as Set
 ----
 
-But graph databases really excel when performing queries
-involving multiple edge traversals. Here is one looking
-at all the olympic records set in 2021 and 2024:
+Groovy happens to be very good at allowing you to add syntactic sugar
+for your own programs or existing classes. TinkerPop's special Groovy support
+is just one example of this. Your vendor could certainly supply such a feature
+for your favorite graph database (why not ask them?) but we'll look shortly at
+how you could write such syntactic sugar yourself when we explore Neo4j.
+
+Our examples so far are all interesting,
+but graph databases really excel when performing queries
+involving multiple edge traversals. Let's look
+at all the olympic records set in 2021 and 2024,
+i.e. all records set after London 2012 (`swim1` from earlier):
 
 [source,groovy]
 ----
@@ -334,8 +346,8 @@ Paris 2024 Final
 Paris 2024 Relay leg1
 ----
 
-As a side note, TinkerPop has a `GraphMLWriter` class which can write out our
-graph in _GraphML_, which is how the above image was created.
+NOTE: While not important for our examples, TinkerPop has a `GraphMLWriter` class which can write out our
+graph in _GraphML_, which is how the earlier image of Graphs and Nodes was initially generated.
 
 == Neo4j
 
@@ -405,10 +417,10 @@ Node.metaClass {
 ----
 
 What does this do? The propertyMissing lines catch attempts to use Groovy's
-normal property access and funnels then through the `getProperty` and `setProperty` methods.
+normal property access and funnels then through appropriate `getProperty` and `setProperty` methods.
 The methodMissing line means any attempted method calls that we don't recognize
 are intended to be relationship creation, so we funnel them through the appropriate
-method call.
+`createRelationshipTo` method call.
 
 Now we can use normal Groovy property access for setting the node properties.
 It looks much cleaner.
@@ -442,7 +454,7 @@ swim2.result = 'First'
 swim2.event = 'Heat 4'
 swim2.at = 'Tokyo 2021'
 km.swam(swim2)
-swim2.supercedes(swim1)
+swim2.supersedes(swim1)
 
 swim3 = tx.createNode('Swim')
 swim3.time = 57.72d
@@ -454,21 +466,16 @@ km.swam(swim3)
 
 The code for relationships is certainly a lot cleaner too,
 and it was quite a minimal amount of work to define the necessary metaprogramming.
+
 With a little bit more work, we could use static metaprogramming techniques.
 This would give us better IDE completion.
-
-Another interesting topic which we won't elaborate here is stronger type checking for graphs.
-For graph libraries which support schemas, the types for node and edge properties can be defined,
-as can the allowable nodes applicable to any edge relationship. For such systems, if you try to
-define a poorly-typed property, or incorrectly use a relationship, you will receive a runtime error.
-Groovy lets us take things further, if we want, and if we are willing to do a little more work.
-For example, if the schema is available at compile time, we could write a type checking extension
-which would fail compilation if any invalid edge or vertex definitions were detected.
-
+We'll have more to say about improved type checking at the end of this post.
 For now though, let's continue with defining the rest of our graph.
+
 We can redefine our `insertSwimmer` and `insertSwim` methods using Neo4j implementation
 calls, and then our earlier code could be used to create our graph. Now let's
-investigate what the queries look like.
+investigate what the queries look like. We'll start with querying via
+the API. and later look at using Cypher.
 
 First, the successful countries in Paris 2024:
 
@@ -499,7 +506,7 @@ Now, what were the times for records broken in finals:
 [source,groovy]
 ----
 var recordTimesInFinals = swims.findAll { swim ->
-    swim.event == 'Final' && swim.hasRelationship(supercedes)
+    swim.event == 'Final' && swim.hasRelationship(supersedes)
 }*.time
 assert recordTimesInFinals == [57.47d, 57.33d]
 ----
@@ -522,7 +529,7 @@ for (Path p in tx.traversalDescription()
 ----
 
 Earlier versions of Neo4j also supported Gremlin, so we could have written our queries in
-the same was as we did for TinkerPop. That technology is deprecated for Neo4j, and instead
+the same was as we did for TinkerPop. That technology is deprecated in recent Neo4j versions, and instead
 they now offer a Cypher query language. We can use that language for all of our previous queries
 as shown here:
 
@@ -548,10 +555,10 @@ RETURN s1
 }
 ----
 
-=== An aside on graph design
-
+.An aside on graph design
+****
 This blog post is definitely, not meant to be an advanced course on graph database
-design, but it is worth pointing out a few points.
+design, but it is worth noting a few points.
 
 Deciding which information should be stored as node properties and which as relationships
 still requires developer judgement. For example, we could have added a Boolean `olympicRecord`
@@ -567,7 +574,7 @@ We could write a query to find this as follows:
 [source,groovy]
 ----
 assert tx.execute('''
-MATCH (sr1:swimmer)-[:swam]->(sm1:swim {event: 'Final'}), (sm2:swim {event: 'Final'})-[:supercedes]->(sm3:swim)
+MATCH (sr1:swimmer)-[:swam]->(sm1:swim {event: 'Final'}), (sm2:swim {event: 'Final'})-[:supersedes]->(sm3:swim)
 WHERE sm1.at = sm2.at AND sm1 <> sm2 AND sm1.time < sm3.time
 RETURN sr1.name as name
 ''')*.name == ['Kylie Masse']
@@ -595,7 +602,7 @@ The resulting query becomes this:
 [source,groovy]
 ----
 assert tx.execute('''
-MATCH (sr1:swimmer)-[:swam]->(sm1:swim {event: 'Final'})-[:runnerup]->{1,2}(sm2:swim {event: 'Final'})-[:supercedes]->(sm3:swim)
+MATCH (sr1:swimmer)-[:swam]->(sm1:swim {event: 'Final'})-[:runnerup]->{1,2}(sm2:swim {event: 'Final'})-[:supersedes]->(sm3:swim)
 WHERE sm1.time < sm3.time
 RETURN sr1.name as name
 ''')*.name == ['Kylie Masse']
@@ -603,6 +610,7 @@ RETURN sr1.name as name
 
 The _MATCH_ clause is similar in complexity, the _WHERE_ clause is much simpler.
 The query is probably faster too, but it is a tradeoff that should be weighed up.
+****
 
 == Apache AGE
 
@@ -1210,3 +1218,73 @@ gremlin.gremlin('''
     println "$a $e"
 }
 ----
+
+== Static typing
+
+Another interesting topic is improving type checking for graph database code.
+Groovy supports very dynamic styles of code through to "stronger-than-Java" type checking.
+
+Some graph database technologies offer only a schema-free experience
+to allow your data models to _"adapt and change easily with your business"_.
+Others allow a schema to be defined with varying degrees of information.
+Groovy's dynamic capabilities make it particularly suited for writing code
+that will work easily even if you change your data model on the fly.
+However, if you prefer to add further type checking into your code, Groovy has
+options for that too.
+
+Let's recap on what schema-like capabilities our examples made use of:
+
+* Apache TinkerPop: used dynamic vertex labels and edges
+* Neo4j: used dynamic vertex labels but required edges to be defined by an enum
+* Apache AGE: although not shown in this post, defined vertex labels, edges were dynamic
+* OrientDB: defined vertex and edge classes
+* ArcadeDB: defined vertex and edge types
+* TuGraph: defined vertex and edge labels, vertex labels had typed properties, edge labels typed with from/to vertex labels
+* Apache HugeGraph: defined vertex and edge labels, vertex labels had typed properties, edge labels typed with from/to vertex labels
+
+The good news about where we chose very dynamic options, we could easily add new
+vertices and edges, e.g.:
+
+[source,groovy]
+----
+var mb = g.addV('Coach').property(name: 'Michael Bohl').next()
+mb.coaches(kmk)
+----
+
+For the examples which used schema-like capabilities, we'd need to declare the additional
+vertex type `Coach` and edge `coaches` before we could define the new node and edge.
+Let's explore just a few options where Groovy capabilities could make it easier to deal
+with typing.
+
+We previously used `insertSwimmer` and `insertSwim` helper methods. We could supply types
+for those parameters even where our underlying database technology wasn't using them.
+That would at least capture typing errors when inserting information into our graph.
+
+We could use a richly-typed domain using Groovy classes or records. We could generate
+the necessary method calls to create the schema/labels and then populate the database.
+
+Alternatively, we can leave the code in its dynamic form and make use of Groovy's
+extensible type checking system. We could write an extension which
+fails compilation if any invalid edge or vertex definitions were detected.
+For our `coaches` example above, the previous line would pass compilation
+but if had incorrect vertices for that edge relationship, compilation would fail,
+e.g. for the statement `swim1.coaches(mb)`, we'd get the following error:
+
+----
+[Static type checking] - Invalid edge - expected: <Coach>.coaches(<Swimmer>)
+but found: <Swim>.coaches(<Coach>)
+@ line 20, column 5.
+swim1.coaches(mb)
+^
+
+1 error
+----
+
+We won't show the code for this, it's in the GitHub repo. It is hard-coded to
+know about the `coaches` relationship. Ideally, we'd combine extensible type checking
+with the previously mentioned richly-typed model, and we could populate both the
+information that our type checker needs and any label/schema information our
+graph database would need.
+
+Anyway, these a just a few options Groovy gives you. Why not have fun trying out some
+ideas yourself!
