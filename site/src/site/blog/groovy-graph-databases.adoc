@@ -119,11 +119,22 @@ required for the kind of relationship traversal we are looking at.
 There are certainly far more complex SQL examples for different kinds of
 traversals like shortest path.
 
+This example used TuGraph's Cypher variant as the Query language. Not all the
+databases we'll look at support Cypher, but they all have some kind of query
+language or API that makes such queries shorter.
+
+Several of the other databases do support a variant of https://www.iso.org/standard/76120.html[Cypher].
+Others support different SQL-like query languages.
+We'll also see several JMV-based databases which support TinkerPop/Gremlin.
+It's a Groovy-based technology and will be our first technology to explore.
+Recently, ISO published an international standard, https://www.iso.org/standard/76120.html[GQL],
+for property graph databases. We expect to see databases supporting that standard
+in the not too distant future.
+
 Now, it's time to explore the case study using our different database technologies.
 We tried to pick technologies that seem reasonably well maintained, had reasonable
 JVM support, and had any features that seemed worth showing off. Several we
-selected because they have TinkerPop support. It's a Groovy-based technology
-and will be our first technology to explore.
+selected because they have TinkerPop/Gremlin support.
 
 == Apache TinkerPop
 
