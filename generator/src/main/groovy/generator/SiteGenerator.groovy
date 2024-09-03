@@ -287,7 +287,7 @@ class SiteGenerator {
 
     @CompileDynamic
     private void renderBlogFeed(Map<String, Document> blogList, String baseDir) {
-        def sorted = blogList.sort { e -> e.value.revisionInfo.date }.reverse()
+        def sorted = blogList.sort { e1, e2 -> e2.value.revisionInfo.date <=> e1.value.revisionInfo.date }
         def base = "http://groovy.apache.org/$baseDir"
         def feedDir = new File(outputDir, baseDir)
         feedDir.mkdirs()
