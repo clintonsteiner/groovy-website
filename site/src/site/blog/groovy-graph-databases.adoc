@@ -1,6 +1,7 @@
 = Using Graph Databases with Groovy
 Paul King
 :revdate: 2024-09-02T22:18:00+00:00
+:updated: 2024-09-18T22:20:00+00:00
 :keywords: tugraph, tinkerpop, gremlin, neo4j, apache age, graph databases, apache hugegraph, arcadedb, orientdb, groovy
 :description: This post illustrates using graph databases with Groovy.
 
@@ -177,8 +178,8 @@ by querying the properties of two nodes respectively:
 
 [source,groovy]
 ----
-var (name, country) = ['name', 'country'].collect { es.property(it).value() }
-var (at, event, time) = ['at', 'event', 'time'].collect { swim1.property(it).value() }
+var (name, country) = ['name', 'country'].collect { es.value(it) }
+var (at, event, time) = ['at', 'event', 'time'].collect { swim1.value(it) }
 println "$name from $country swam a time of $time in $event at the $at Olympics"
 ----
 
@@ -197,7 +198,7 @@ We can enable the syntactic sugar with:
 SugarLoader.load()
 ----
 
-Which then lets us write the slightly shorter:
+Which then lets us write (instead of the three earlier lines) the slightly shorter:
 
 [source,groovy]
 ----
@@ -286,9 +287,7 @@ Similarly, we can find the olympic records set during heat swims:
 
 [source,groovy]
 ----
-var recordSetInHeat = g.V().hasLabel('Swim')
-    .filter { it.get().property('event').value().startsWith('Heat') }
-    .values('at').toSet()
+var recordSetInHeat = g.V().has('Swim','event', startingWith('Heat')).values('at').toSet()
 assert recordSetInHeat == ['London 2012', 'Tokyo 2021'] as Set
 ----
 
@@ -308,7 +307,7 @@ Making use of the Groovy syntactic sugar gives simpler versions:
 var successInParis = g.V.out('swam').has('at', 'Paris 2024').in.country.toSet
 assert successInParis == ['🇺🇸', '🇦🇺'] as Set
 
-var recordSetInHeat = g.V.hasLabel('Swim').filter { it.event.startsWith('Heat') }.at.toSet
+var recordSetInHeat = g.V.has('Swim','event', startingWith('Heat')).at.toSet
 assert recordSetInHeat == ['London 2012', 'Tokyo 2021'] as Set
 
 var recordTimesInFinals = g.V.has('event', 'Final').as('ev').out('supersedes').select('ev').time.toSet
@@ -1008,8 +1007,8 @@ Hence, we added the `id` for our `Swim` vertex.
 ----
 '''
 CALL db.dropDB()
-CALL db.createVertexLabel('Swimmer', 'name', 'name', STRING, false, 'country', STRING, false)
-CALL db.createVertexLabel('Swim', 'id', 'id', INT32, false, 'event', STRING, false, 'result', STRING, false, 'at', STRING, false, 'time', FLOAT, false)
+CALL db.createVertexLabel('Swimmer', 'name', 'name', 'STRING', false, 'country', 'STRING', false)
+CALL db.createVertexLabel('Swim', 'id', 'id', 'INT32', false, 'event', 'STRING', false, 'result', 'STRING', false, 'at', 'STRING', false, 'time', 'FLOAT', false)
 CALL db.createEdgeLabel('swam','[["Swimmer","Swim"]]')
 CALL db.createEdgeLabel('supersedes','[["Swim","Swim"]]')
 '''.trim().readLines().each{ run(it) }
@@ -1020,48 +1019,44 @@ With these defined, we can create our swim information:
 [source,groovy]
 ----
 run '''create
-    (es:Swimmer {name: 'Emily Seebohm', country: 'AU'}),
+    (es:Swimmer {name: 'Emily Seebohm', country: '🇦🇺'}),
     (swim1:Swim {event: 'Heat 4', result: 'First', time: 58.23, at: 'London 2012', id:1}),
     (es)-[:swam]->(swim1),
-    (km:Swimmer {name: 'Kylie Masse', country: 'CA'}),
+    (km:Swimmer {name: 'Kylie Masse', country: '🇨🇦'}),
     (swim2:Swim {event: 'Heat 4', result: 'First', time: 58.17, at: 'Tokyo 2021', id:2}),
     (km)-[:swam]->(swim2),
-    (swim3:Swim {event: 'Final', result: 'Silver', time: 57.72, at: 'Tokyo 2021', id:3}),
+    (swim3:Swim {event: 'Final', result: '🥈', time: 57.72, at: 'Tokyo 2021', id:3}),
     (km)-[:swam]->(swim3),
     (swim2)-[:supersedes]->(swim1),
-    (rs:Swimmer {name: 'Regan Smith', country: 'US'}),
+    (rs:Swimmer {name: 'Regan Smith', country: '🇺🇸'}),
     (swim4:Swim {event: 'Heat 5', result: 'First', time: 57.96, at: 'Tokyo 2021', id:4}),
     (rs)-[:swam]->(swim4),
     (swim5:Swim {event: 'Semifinal 1', result: 'First', time: 57.86, at: 'Tokyo 2021', id:5}),
     (rs)-[:swam]->(swim5),
-    (swim6:Swim {event: 'Final', result: 'Bronze', time: 58.05, at: 'Tokyo 2021', id:6}),
+    (swim6:Swim {event: 'Final', result: '🥉', time: 58.05, at: 'Tokyo 2021', id:6}),
     (rs)-[:swam]->(swim6),
-    (swim7:Swim {event: 'Final', result: 'Silver', time: 57.66, at: 'Paris 2024', id:7}),
+    (swim7:Swim {event: 'Final', result: '🥈', time: 57.66, at: 'Paris 2024', id:7}),
     (rs)-[:swam]->(swim7),
     (swim8:Swim {event: 'Relay leg1', result: 'First', time: 57.28, at: 'Paris 2024', id:8}),
     (rs)-[:swam]->(swim8),
     (swim4)-[:supersedes]->(swim2),
-    (kmk:Swimmer {name: 'Kaylee McKeown', country: 'AU'}),
+    (kmk:Swimmer {name: 'Kaylee McKeown', country: '🇦🇺'}),
     (swim9:Swim {event: 'Heat 6', result: 'First', time: 57.88, at: 'Tokyo 2021', id:9}),
     (kmk)-[:swam]->(swim9),
     (swim9)-[:supersedes]->(swim4),
     (swim5)-[:supersedes]->(swim9),
-    (swim10:Swim {event: 'Final', result: 'Gold', time: 57.47, at: 'Tokyo 2021', id:10}),
+    (swim10:Swim {event: 'Final', result: '🥇', time: 57.47, at: 'Tokyo 2021', id:10}),
     (kmk)-[:swam]->(swim10),
     (swim10)-[:supersedes]->(swim5),
-    (swim11:Swim {event: 'Final', result: 'Gold', time: 57.33, at: 'Paris 2024', id:11}),
+    (swim11:Swim {event: 'Final', result: '🥇', time: 57.33, at: 'Paris 2024', id:11}),
     (kmk)-[:swam]->(swim11),
     (swim11)-[:supersedes]->(swim10),
     (swim8)-[:supersedes]->(swim11),
-    (kb:Swimmer {name: 'Katharine Berkoff', country: 'US'}),
-    (swim12:Swim {event: 'Final', result: 'Bronze', time: 57.98, at: 'Paris 2024', id:12}),
+    (kb:Swimmer {name: 'Katharine Berkoff', country: '🇺🇸'}),
+    (swim12:Swim {event: 'Final', result: '🥉', time: 57.98, at: 'Paris 2024', id:12}),
     (kb)-[:swam]->(swim12)
 '''
 ----
-
-NOTE: In my attempts to use this client, emoji content seemed to break the property parser.
-For now, I have replaced emoji content with simple text. I'll revise this post should I find
-a better workaround or if the issue is otherwise resolved.
 
 TuGraph uses Cypher style queries. Here are our three standard queries:
 
@@ -1070,7 +1065,7 @@ TuGraph uses Cypher style queries. Here are our three standard queries:
 assert run('''
     MATCH (sr:Swimmer)-[:swam]->(sm:Swim {at: 'Paris 2024'})
     RETURN DISTINCT sr.country AS country
-''')*.get('country')*.asString().toSet() == ["US", "AU"] as Set
+''')*.get('country')*.asString().toSet() == ['🇺🇸', '🇦🇺'] as Set
 
 assert run('''
     MATCH (s:Swim)
@@ -1298,3 +1293,9 @@ graph database would need.
 
 Anyway, these a just a few options Groovy gives you. Why not have fun trying out some
 ideas yourself!
+
+.Update history
+****
+*02/Sep/2024*: Initial version. +
+*18/Sep/2024*: Updated for latest Groovy 5 version, updated for TuGraph 4.5.0 with thanks to Florian (GitHub: fanzhidongyzby) and Richard Bian (x: @RichSFO), TinkerPop tweaks with thanks to Stephen Mallette (ASF: spmallette). +
+****
