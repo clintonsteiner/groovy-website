@@ -45,8 +45,8 @@ to tell it the maximum number of times to echo the message before stopping.
 
 == A Pekko implementation in Groovy
 
-This example uses Groovy 4.0.21 and Pekko 1.0.3.
-It was tested with JDK 11 and 17.
+This example uses Groovy 4.0.23 and Pekko 1.1.1.
+It was tested with JDK 11, 17 and 21.
 
 The Pekko documentation gives Java and Scala implementations.
 You should notice that the Groovy implementation is similar to the Java one
@@ -197,8 +197,8 @@ The log output from running the script will look similar to this:
 
 == A GPars implementation in Groovy
 
-This example uses Groovy 4.0.21 and GPars 1.2.1.
-It was tested with JDK 8, 11, 17 and 21.
+This example uses Groovy 4.0.23 and GPars 1.2.1.
+It was tested with JDK 8, 11, 17, 21 and 23.
 
 We'll follow the same conventions for strongly typed messages in our GPars example.
 Here are our three message containers:
