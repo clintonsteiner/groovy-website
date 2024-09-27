@@ -46,7 +46,7 @@ to tell it the maximum number of times to echo the message before stopping.
 == A Pekko implementation in Groovy
 
 This example uses Groovy 4.0.23 and Pekko 1.1.1.
-It was tested with JDK 11, 17 and 21.
+It was tested with JDK 11, 17, 21 and 23.
 
 The Pekko documentation gives Java and Scala implementations.
 You should notice that the Groovy implementation is similar to the Java one
