@@ -1,7 +1,7 @@
 = Using Apache Pekko actors and GPars actors with Groovy
 Paul King
 :revdate: 2023-07-17T23:24:56+00:00
-:updated: 2024-06-25T11:59:00+00:00
+:updated: 2024-09-28T04:59:00+00:00
 :keywords: concurrency, groovy, actors, pekko, gpars
 :description: This post looks at using Apache Pekko Actors and GPars Actors with Groovy.
 
@@ -348,5 +348,6 @@ https://github.com/paulk-asert/groovy-pekko-gpars
 *17/Jul/2023*: Initial version. +
 *18/Jul/2023*: Add discussion about type-safe messages. +
 *26/Jul/2023*: Update to Pekko 1.0.1. +
-*25/Jun/2024*: Update to Pekko 1.0.3.
+*25/Jun/2024*: Update to Pekko 1.0.3. +
+*28/Sep/2024*: Update to Pekko 1.1.1.
 ****
