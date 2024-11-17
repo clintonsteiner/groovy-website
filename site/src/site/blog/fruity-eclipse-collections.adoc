@@ -94,7 +94,7 @@ fonts for our fruit as shown here:
 
 image:img/fruit_emoji.png[Noto Color Emoji]
 
-We'll use an Eclipse Collection `BiMap` to switch back and forth between the color names
+We'll use an Eclipse Collections `BiMap` to switch back and forth between the color names
 and java.awt colors:
 
 [source,groovy]
