@@ -190,23 +190,23 @@ Let's now tokenize our documents and let Lucene index them.
 var analyzer = new ApacheProjectAnalyzer() // <1>
 var indexDir = new ByteBuffersDirectory() // <2>
 var config = new IndexWriterConfig(analyzer)
-var writer = new IndexWriter(indexDir, config)
 
 var blogBaseDir = '/projects/apache-websites/groovy-website/site/src/site/blog'
-new File(blogBaseDir).traverse(nameFilter: ~/.*\.adoc/) { file ->
-    file.withReader { br ->
-        var document = new Document()
-        var fieldType = new FieldType(stored: true,
-            indexOptions: IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS,
-            storeTermVectors: true,
-            storeTermVectorPositions: true,
-            storeTermVectorOffsets: true)
-        document.add(new Field('content', br.text, fieldType)) // <3>
-        document.add(new StringField('name', file.name, Field.Store.YES)) // <4>
-        writer.addDocument(document)
+new IndexWriter(indexDir, config).withCloseable { writer ->
+    new File(blogBaseDir).traverse(nameFilter: ~/.*\.adoc/) { file ->
+        file.withReader { br ->
+            var document = new Document()
+            var fieldType = new FieldType(stored: true,
+                indexOptions: IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS,
+                storeTermVectors: true,
+                storeTermVectorPositions: true,
+                storeTermVectorOffsets: true)
+            document.add(new Field('content', br.text, fieldType)) // <3>
+            document.add(new StringField('name', file.name, Field.Store.YES)) // <4>
+            writer.addDocument(document)
+        }
     }
 }
-writer.close()
 
 var reader = DirectoryReader.open(indexDir)
 var searcher = new IndexSearcher(reader)
@@ -224,7 +224,6 @@ results.scoreDocs.each { ScoreDoc doc -> // <7>
     println "${document.get('name')}: ${found*.replaceAll('\n', ' ').countBy()}"
     found.each { histogram[it.replaceAll('\n', ' ')] += 1 } // <9>
 }
-
 println()
 
 histogram.sort { e -> -e.value }.each { k, v -> // <10>
@@ -233,8 +232,8 @@ histogram.sort { e -> -e.value }.each { k, v -> // <10>
 }
 
 List<String> handleHit(ScoreDoc hit, Query query, DirectoryReader dirReader) { // <11>
-    boolean phraseHighlight = Boolean.TRUE
-    boolean fieldMatch = Boolean.TRUE
+    boolean phraseHighlight = true
+    boolean fieldMatch = true
     FieldQuery fieldQuery = new FieldQuery(query, dirReader, phraseHighlight, fieldMatch)
     FieldTermStack stack = new FieldTermStack(dirReader, hit.doc, 'content', fieldQuery)
     FieldPhraseList phrases = new FieldPhraseList(stack, fieldQuery)
