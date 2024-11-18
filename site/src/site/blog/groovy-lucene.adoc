@@ -73,16 +73,16 @@ var histogram = [:].withDefault { 0 }
 
 new File(blogBaseDir).traverse(nameFilter: ~/.*\.adoc/) { file ->  // <2>
     var m = file.text =~ tokenRegex // <3>
-    var projects = m*.get(2).grep()*.toLowerCase()*.replaceAll('\n', ' ').countBy() // <4>
-    if (projects) {
-        println "$file.name: $projects" // <5>
-        projects.each { k, v -> histogram[k] += v } // <6>
+    var projects = m*.get(2).grep()*.toLowerCase()*.replaceAll('\n', ' ') // <4>
+    var counts = projects.countBy() // <5>
+    if (counts) {
+        println "$file.name: $counts" // <6>
+        counts.each { k, v -> histogram[k] += v } // <7>
     }
 }
 
 println()
-
-histogram.sort { e -> -e.value }.each { k, v -> // <7>
+histogram.sort { e -> -e.value }.each { k, v -> // <8>
     var label = "$k ($v)"
     println "${label.padRight(32)} ${bar(v, 0, 50, 50)}"
 }
@@ -90,10 +90,11 @@ histogram.sort { e -> -e.value }.each { k, v -> // <7>
 <1> You'd need to check out the Groovy website and point to it here
 <2> This traverse the directory processing each asciidoc file
 <3> We define our matcher
-<4> This pulls out project names (capture group 2) and ignores other words (using grep) then aggregates the hits for that file
-<5> We print out each blog post file name and its project references
-<6> We add the file aggregates to the overall aggregates
-<7> We print out the pretty ascii barchart summarising the overall aggregates
+<4> This pulls out project names (capture group 2), ignores other words (using grep), converts to lowercase, and removes newlines for the case where a term might span over the end of a line
+<5> This aggregates the count hits for that file
+<6> We print out each blog post file name and its project references
+<7> We add the file aggregates to the overall aggregates
+<8> We print out the pretty ascii barchart summarising the overall aggregates
 
 The output looks like:
 
@@ -158,6 +159,7 @@ apache&nbsp;flink (1)                 █▏
 
 == Using Lucene
 
+image:https://www.apache.org/logos/res/lucene/default.png[lucene logo,100,float="right"]
 Okay, regular expressions weren't that hard but in general we might want to search many things.
 Search frameworks like Lucene help with that. Let's see what it looks like to apply
 Lucene to our problem.
