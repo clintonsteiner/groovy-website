@@ -188,17 +188,17 @@ image:img/Clustering4.png[Whiskey flavour profiles with Ignite]
 
 * The same case study was also done using Spark:
 +
-image:img/coceu2024_whiskey1.png[Whiskey flavour profiles with Spark]
+image:img/coceu2024_whiskey1.png[Whiskey flavour profiles with Apache Spark]
 
-* The same case study was also done using Wayang:
+* The same case study was also done using Apache Wayang:
 +
 image:img/coceu2024_whiskey2.png[Whiskey flavour profiles with Wayang]
 
-* The same case study was also done using Beam (Python-style version shown here):
+* The same case study was also done using Apache Beam (Python-style version shown here):
 +
 image:img/coceu2024_whiskey3.png[Whiskey flavour profiles with Beam]
 
-* The same case study was also done using Flink:
+* The same case study was also done using Apache Flink:
 +
 image:img/coceu2024_whiskey4.png[Whiskey flavour profiles with Flink]
 
