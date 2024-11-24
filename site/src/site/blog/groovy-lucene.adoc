@@ -13,7 +13,7 @@ information we require from the original source (https://asciidoc.org/[AsciiDoc]
 We'll first look at how we can find project references using regular expressions
 and then using https://lucene.apache.org/[Apache Lucene].
 
-== Finding project names with a regex
+== A regular expression for project names
 
 For the sake of this post, let's assume that project references will
 include the word "Apache" followed by the project name. To make it more
@@ -58,7 +58,7 @@ We've used Groovy's multiline slashy string to save having to escape backslashes
 We've also enabled regex whitespace and comments to explain the regex.
 Feel free to make a compact (long) one-liner without comments if you prefer.
 
-== Finding project names using regex matching
+== Collecting project name statistics using regex matching
 
 With our regex sorted, let's look at how you could use a Groovy matcher
 to find all the project names. First we'll define one other common constant,
