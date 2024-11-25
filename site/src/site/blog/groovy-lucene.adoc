@@ -1,14 +1,17 @@
 = Searching with Lucene
 Paul King
-:revdate: 2024-11-18T20:30:00+00:00
-:keywords: aggregation, search, lucene, groovy
+:revdate: 2024-11-25T15:30:00+00:00
+:keywords: aggregation, search, lucene, groovy, emoji, regex
 :description: This post looks at using Lucene to find references to other projects in Groovy's blog posts.
 
 The Groovy https://groovy.apache.org/blog/[blog posts] often reference other Apache projects.
+Perhaps we'd like to know which other projects and which blog posts are involved.
 Given that these pages are published, we could use something like https://nutch.apache.org[Apache Nutch] or
 https://solr.apache.org[Apache Solr] to crawl/index those web pages and search using those tools.
 For this post, we are going to search for the
-information we require from the original source (https://asciidoc.org/[AsciiDoc]) files.
+information we require from the original source (https://asciidoc.org/[AsciiDoc]) files
+which can be found in the
+https://github.com/apache/groovy-website/tree/asf-site/site/src/site/blog[groovy-website] repo.
 We'll first look at how we can find project references using regular expressions
 and then using https://lucene.apache.org/[Apache Lucene].
 
@@ -21,35 +24,36 @@ We'll also make provision for projects with subprojects, at least for
 Apache Commons, so this will pick up names like "Apache Commons Math"
 for instance. We'll exclude Apache Groovy since that would hit possibly
 every Groovy blog post. We'll also exclude a bunch of words that appear in
-commonly used phrases like "Apache License" and "Apache Projects".
+commonly used phrases like "Apache License" and "Apache Projects" which
+could look like project names to our search queries but aren't.
 
 This is by no means a perfect name reference finder, for example,
 we often refer to Apache Commons Math by its full name when first introduced
-but later in posts we fall back to the more friendly "Commons Math" reference
+in a blog post but later in the post we fall back to the more friendly "Commons Math" reference
 where the "Apache" is understood from the context. We could make the regex
-more elaborate to cater for such cases but there isn't really any benefit,
-so we won't.
+more elaborate to cater for such cases but there isn't really any benefit
+as far as this post is concerned, so we won't.
 
 [source,groovy]
 ----
-String tokenRegex = /(?ix)               # ignore case, enable whitespace & comments
-    \b                                   # word boundary
-    (                                    # start capture of all terms
-        (                                # capture project name term
-            (apache|eclipse)\s           # foundation name
-            (commons\s)?                 # optional subproject name
+String tokenRegex = /(?ix)             # ignore case, enable whitespace & comments
+    \b                                 # word boundary
+    (                                  # start capture of all terms
+        (                              # capture project name term
+            (apache|eclipse)\s         # foundation name
+            (commons\s)?               # optional subproject name
             (
-                ?!(groovy                # negative lookahead for excluded words
+                ?!(groovy              # negative lookahead for excluded words
                 | and   | license  | users
                 | https | projects | software
                 | or    | prefixes | technologies)
             )\w+
-        )                                # end capture project name term
-        |                                # alternatively
-        (                                # capture non-project term
-            \w+?\b                       # non-greedily match any other words
-        )                                # end capture non-project term
-    )                                    # end capture term
+        )                              # end capture project name term
+        |                              # alternatively
+        (                              # capture non-project term
+            \w+?\b                     # non-greedily match any other word chars
+        )                              # end capture non-project term
+    )                                  # end capture term
 /
 ----
 
@@ -59,7 +63,7 @@ Feel free to make a compact (long) one-liner without comments if you prefer.
 
 == Collecting project name statistics using regex matching
 
-With our regex sorted, let's look at how you could use a Groovy matcher
+With our regex in hand, let's look at how we could use a Groovy matcher
 to find all the project names. First we'll define one other common constant,
 the base directory for our blogs, which you might need to change if you
 are wanting to follow along and run these examples:
@@ -94,7 +98,7 @@ histogram.sort { e -> -e.value }.each { k, v -> // <8>
 }
 ----
 <1> This is a map which provides a default value for non-existent keys
-<2> This traverse the directory processing each AsciiDoc file
+<2> This traverses the directory processing each AsciiDoc file
 <3> We define our matcher
 <4> This pulls out project names (capture group 2), ignores other words (using grep), converts to lowercase, and removes newlines for the case where a term might span over the end of a line
 <5> This aggregates the count hits for that file
@@ -102,7 +106,7 @@ histogram.sort { e -> -e.value }.each { k, v -> // <8>
 <7> We add the file aggregates to the overall aggregates
 <8> We print out the pretty ascii barchart summarising the overall aggregates
 
-The output looks like:
+When we run our script, the output looks like:
 
 // &nbsp; entered below so that we don't hit this whole table as a bunch of references
 ++++
@@ -175,16 +179,17 @@ Search frameworks like Lucene help with that. Let's see what it looks like to ap
 Lucene to our problem.
 
 First, we'll define a custom analyzer. Lucene is very flexible and comes with builtin
-analyzers. In a typical scenario, we might just search on all words.
+analyzers. In a typical scenario, we might just index on all found words.
 There's a builtin analyzer for that.
 If we used one of the builtin analyzers, to query for our project names,
-we'd construct a query that spanned multiple (word) terms.
+we'd need to construct a query that spanned multiple (word) terms.
 We'll look at what that might look like later, but
 for the purposes of our little example, we are going to assume project names
 are indivisible terms and slice up our documents that way.
 
 Luckily, Lucene has a pattern tokenizer
 which lets us reuse our existing regex.
+Basically, our index will have project name terms and other found words.
 
 [source,groovy]
 ----
@@ -424,7 +429,7 @@ List<String> handleHit(ScoreDoc hit, Query query, DirectoryReader dirReader) {
 ----
 <1> Converts a `FieldPhraseList` into a list of `TermInfo` instances into a list of strings
 
-Now we can run our query code:
+With our helper method defined, we can now write our query code:
 
 [source,groovy]
 ----
@@ -501,8 +506,11 @@ apache&nbsp;age (11)                  ███████████▏
 eclipse&nbsp;deeplearning4j (8)       ████████▏
 apache&nbsp;commons collections (7)   ███████▏
 apache&nbsp;commons csv (6)           ██████▏
+
 </pre>
 ++++
+
+We could also aggregate file counts which mention project names. It too, would look the same as before.
 
 == Using Lucene Facets
 
@@ -780,10 +788,10 @@ new IndexWriter(indexDir, config).withCloseable { writer ->
         file.withReader { br ->
             var document = new Document()
             var fieldType = new FieldType(stored: true,
-                indexOptions: IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS,
-                storeTermVectors: true,
-                storeTermVectorPositions: true,
-                storeTermVectorOffsets: true)
+              indexOptions: IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS,
+              storeTermVectors: true,
+              storeTermVectorPositions: true,
+              storeTermVectorOffsets: true)
             document.add(new Field('content', br.text, fieldType))
             document.add(new StringField('name', file.name, Field.Store.YES))
             writer.addDocument(document)
@@ -864,7 +872,8 @@ var results = searcher.search(query, 30)
 println "Total documents with hits for $query --> $results.totalHits"
 ----
 
-Running the code gives the same output as previously.
+Running the code gives the same output as previously. If you are interested in the DSL
+details, have a look at the https://github.com/paulk-asert/groovy-lucene/blob/main/src/main/groovy/LuceneDSL.groovy[source file].
 
 We can try out our DSL on other terms:
 
