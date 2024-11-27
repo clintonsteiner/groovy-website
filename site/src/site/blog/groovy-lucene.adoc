@@ -548,14 +548,14 @@ store slightly different information in each one:
 
 |`projectFileCounts`
 |`FacetField`
-|Documents which reference a project, e.g.
+|Project references by document, e.g.
 "Apache Spark" is referenced by
 `classifying-iris-flowers-with-deep.adoc`
 
 |`projectNameCounts`
 |`FacetField`
-|As above but hierarchical, e.g.
-["Apache", "Commons", "Math"] is reference by
+|Project references as a hierarchy by document, e.g.
+["Apache", "Commons", "Math"] is referenced by
 `fruity-eclipse-collections.adoc`
 |===
 
