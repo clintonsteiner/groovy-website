@@ -171,7 +171,7 @@ The naming possibly deserves some explanation. There has been ongoing
 effort to modularise Commons Math and there are numerous components
 delivered as a result. The optimisation classes haven't
 been worked on yet and are available in the aforementioned artifact.
-* Using `org.hipparchus:hipparchus-optim:3.0` gives classes from the forked
+* Using `org.hipparchus:hipparchus-optim:3.1` gives classes from the forked
 project. For the classes we are using, there is essentially no difference
 in the fork, but other parts of the library have seen useful updates
 if you don't mind having a dependency that isn't backed by the ASF.
@@ -205,7 +205,7 @@ OptaPlanner is an optimization library combining optimization algorithms with co
 For most of the last 10 years the library was developed under Red Hat's guidance.
 In the last 12 months, the project and other related projects
 were donated to the https://www.apache.org/[ASF] as part of https://kie.apache.org/[Apache KIE].
-More recently, the library was forked as
+More recently, the library was also forked as
 https://timefold.ai/[Timefold].
 
 In this blog, we'll use Timefold, but the code in the examples remains the same for both libraries as you can see in the
@@ -342,7 +342,8 @@ class DietConstraintProvider implements ConstraintProvider {
                 .asConstraint("Max $foodName")
     }
 
-    private static ToIntFunction<Food> totalCost = f -> (f.cost * f.amount).toInteger()
+    private static ToIntFunction<Food> totalCost = f ->
+        (f.cost * f.amount).toInteger()
 
     private static Constraint minCost(ConstraintFactory factory) {
         factory.forEach(Food)
@@ -411,12 +412,14 @@ along with the updated `config` definition:
 
 [source,groovy]
 ----
-def construction = new ConstructionHeuristicPhaseConfig(constructionHeuristicType: FIRST_FIT)
+def construction = new ConstructionHeuristicPhaseConfig(
+        constructionHeuristicType: FIRST_FIT)
 def moveSelector = new UnionMoveSelectorConfig([
         new ChangeMoveSelectorConfig(),
         new SwapMoveSelectorConfig()
 ])
-def localSearch = new LocalSearchPhaseConfig(localSearchType: VARIABLE_NEIGHBORHOOD_DESCENT,
+def localSearch = new LocalSearchPhaseConfig(
+        localSearchType: VARIABLE_NEIGHBORHOOD_DESCENT,
         moveSelectorConfig: moveSelector)
 def config = new SolverConfig()
         .withSolutionClass(DietSolution)
@@ -459,3 +462,8 @@ libraries to solve a diet case study. Our main focus was the
 Apache Commons Math and Hipparchus libraries.
 We also explored using the more powerful Timeflow and OptaPlanner
 libraries.
+
+.Update history
+****
+*10/Dec/2024*: Updated to OptaPlanner 10.0.0 and Timefold 1.16.0.
+****
