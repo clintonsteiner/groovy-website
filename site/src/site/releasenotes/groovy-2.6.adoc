@@ -14,7 +14,7 @@ the new Parrot parser (when enabled) but these versions are not feature complete
 We have left the alpha versions available to help people wanting to port towards Groovy 3.0
 but who are stuck on JDK7. However, we strongly encourage all users on JDK8 or above
 to move directly to Groovy 3.0.
-You should consult the link:../groovy-3.0.html[Groovy 3.0 release notes] for a list of supported language changes.
+You should consult the link:/releasenotes/groovy-3.0.html[Groovy 3.0 release notes] for a list of supported language changes.
 Only differences with 3.0 due to the different JVM requirements are reported here.
 
 [[Groovy2.6releasenotes-Parrot]]
